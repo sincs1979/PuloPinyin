@@ -1,6 +1,6 @@
 # 部落输入法
 
-用 Rust 写的极简、极速拼音输入法。macOS 可直接下载安装包；Linux 用 fcitx5（一条命令编译安装，或等 CI 打好 `.deb`）。
+用 Rust 写的极简、极速拼音输入法。macOS / Linux 都可直接下载安装包。
 
 全拼、首拼、混输、平翘舌 / r-l 模糊音、个人词频学习。输入法就是输入法。
 
@@ -30,64 +30,40 @@ chmod +x scripts/install.sh
 
 学习数据在 `~/Library/Application Support/部落输入法/learned.db`。
 
-## Linux：三步安装（Ubuntu / Debian）
+## Linux：下载安装
 
-这台开发机是 macOS，**打不出** Linux 的 fcitx5 `.so`。请在 **Linux 电脑**上安装。需要已有 **fcitx5**。
+仓库根目录的预编译包（与 macOS 的 `.pkg` 一样，不必克隆代码）：
 
-**1. 装依赖 + Rust**
+- **[部落输入法-linux.deb](https://github.com/sincs1979/PuloPinyin/raw/main/部落输入法-linux.deb)**（Ubuntu / Debian）
+- **[部落输入法-linux.tar.gz](https://github.com/sincs1979/PuloPinyin/raw/main/部落输入法-linux.tar.gz)**（任意发行版，用户目录）
 
-```bash
-sudo apt install fcitx5 libfcitx5core-dev cmake pkg-config build-essential git curl extra-cmake-modules python3
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-source "$HOME/.cargo/env"
-```
+需要已有 **fcitx5**。
 
-**2. 一条命令编译并装到 `~/.local`（推荐）**
+**Debian / Ubuntu（`.deb`）**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sincs1979/PuloPinyin/main/安装-linux.sh | bash
-```
-
-或克隆后执行：
-
-```bash
-git clone https://github.com/sincs1979/PuloPinyin.git
-cd PuloPinyin
-chmod +x 安装-linux.sh
-./安装-linux.sh
-```
-
-**3. 启用输入法**
-
-```bash
+sudo apt install fcitx5
+# 下载仓库根目录的 部落输入法-linux.deb 后：
+sudo apt install ./部落输入法-linux.deb
 fcitx5 -r
 fcitx5-configtool   # 添加 / 启用「部落输入法」
 ```
 
-输入 `zhongguo` 再按空格，应得 **中国**。学习数据在 `~/.local/share/buluo-ime/`。
-
-### 预编译包（`.deb` / `.tar.gz`）
-
-GitHub Actions 在每次 push `main` 后会打 Linux 包，并挂到滚动发布页：
-
-**[releases/tag/linux](https://github.com/sincs1979/PuloPinyin/releases/tag/linux)**
+**任意发行版（`.tar.gz`）**
 
 ```bash
-# Ubuntu / Debian（系统级）
-sudo apt install fcitx5
-sudo apt install ./部落输入法-linux.deb
-fcitx5 -r
-fcitx5-configtool
-
-# 任意发行版（用户目录，解压即装）
+sudo apt install fcitx5   # 或 dnf/pacman 等价包
 tar xf 部落输入法-linux.tar.gz
 ./部落输入法-linux/install.sh
-fcitx5 -r && fcitx5-configtool
+fcitx5 -r
+fcitx5-configtool
 ```
 
-Actions 产物也可在仓库 **Actions → linux-package** 里下载。有 Docker 时可在任意机器执行 `./scripts/package_linux_docker.sh`，会在仓库根目录生成 `部落输入法-linux.deb` 与 `部落输入法-linux.tar.gz`。
+输入 `zhongguo` 再按空格，应得 **中国**。学习数据在 `~/.local/share/buluo-ime/`。
 
-Fedora / Arch 把上面的 `apt` 换成 `dnf install fcitx5-devel cmake` 或 `pacman -S fcitx5 cmake`，再运行 `./安装-linux.sh`。
+从源码在 Linux 上重打安装包：`./scripts/package_linux.sh`（仓库根目录会生成上述两个文件）。没有 Linux 机器时可用 `./scripts/package_linux_docker.sh`。
+
+Fedora / Arch 从源码装：`dnf install fcitx5-devel cmake` 或 `pacman -S fcitx5 cmake`，再 `./安装-linux.sh`。
 
 macOS 的 `ime` crate 是 InputMethodKit / objc2，Linux 上不要拿它当输入法。
 
@@ -137,7 +113,9 @@ linux/fcitx5/               fcitx5 起步插件
 linux/Dockerfile             在 Ubuntu 容器里打 .deb
 tools/dict-compiler/        TSV / learned.db → 二进制词库
 部落输入法.pkg                 macOS 安装包（仓库根目录，可直接下载）
-安装-linux.sh                Linux 一条命令安装
+部落输入法-linux.deb           Linux .deb（仓库根目录，可直接下载）
+部落输入法-linux.tar.gz        Linux 用户目录包（含 install.sh）
+安装-linux.sh                Linux 从源码一条命令安装
 scripts/package_macos.sh    打 部落输入法.pkg
 scripts/package_linux.sh    打 部落输入法-linux.deb / .tar.gz（须在 Linux 上）
 scripts/install_linux.sh     编译引擎并安装 fcitx5 插件到 ~/.local
