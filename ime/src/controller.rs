@@ -625,6 +625,34 @@ fn usable_caret(rect: NSRect) -> Option<NSRect> {
     Some(rect)
 }
 
+/// Map a letter key to the character the engine should see.
+///
+/// Chinese: uppercase only when Shift is actually held *and* the event's
+/// `characters()` is a capital (or missing). A stuck Shift *flag* with a
+/// lowercase `characters()` stays pinyin — that is what made 打不出来 after
+/// the last install if every letter was sent as `Char('Z')`.
+fn mapped_letter(
+    raw: char,
+    displayed: Option<char>,
+    shift: bool,
+    ascii: bool,
+    caps_upper: bool,
+) -> char {
+    if ascii {
+        return if caps_upper || shift {
+            raw.to_ascii_uppercase()
+        } else {
+            raw.to_ascii_lowercase()
+        };
+    }
+    match displayed {
+        Some(d) if d.is_ascii_uppercase() && shift => raw.to_ascii_uppercase(),
+        Some(d) if d.is_ascii_alphabetic() => d.to_ascii_lowercase(),
+        _ if shift => raw.to_ascii_uppercase(),
+        _ => raw.to_ascii_lowercase(),
+    }
+}
+
 fn map_char(ch: char, candidates_active: bool, ascii: bool) -> Option<KeyEvent> {
     match ch {
         c if c.is_ascii_alphabetic() => Some(KeyEvent::Char(c)),
@@ -659,23 +687,20 @@ fn map_key(
         .contains(NSEventModifierFlags::Shift);
 
     if let Some(c) = raw.filter(|c| c.is_ascii_alphabetic()) {
-        // English: Shift / long-press Caps → uppercase.
-        // Chinese: Shift+letter commits ASCII uppercase; Caps tap is 中/英.
-        let letter = if ascii {
-            if caps_upper || shift {
-                c.to_ascii_uppercase()
-            } else {
-                c.to_ascii_lowercase()
-            }
-        } else if shift {
-            c.to_ascii_uppercase()
-        } else {
-            c.to_ascii_lowercase()
-        };
+        let letter = mapped_letter(c, displayed_ch, shift, ascii, caps_upper);
         return Some(KeyEvent::Char(letter));
     }
 
     if let Some(c) = displayed_ch {
+        if c.is_ascii_alphabetic() {
+            return Some(KeyEvent::Char(mapped_letter(
+                c,
+                displayed_ch,
+                shift,
+                ascii,
+                caps_upper,
+            )));
+        }
         if let Some(key) = map_char(c, candidates_active, ascii) {
             return Some(key);
         }
@@ -721,4 +746,37 @@ fn support_dir() -> PathBuf {
 
 pub fn register_controller_class() {
     let _ = BuluoInputController::class();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::mapped_letter;
+
+    #[test]
+    fn chinese_unshifted_is_always_lowercase() {
+        for raw in ['z', 'Z', 'n', 'N'] {
+            assert_eq!(
+                mapped_letter(raw, Some(raw.to_ascii_lowercase()), false, false, false),
+                raw.to_ascii_lowercase()
+            );
+        }
+    }
+
+    #[test]
+    fn chinese_stuck_shift_flag_with_lowercase_display_is_pinyin() {
+        assert_eq!(
+            mapped_letter('z', Some('z'), true, false, false),
+            'z'
+        );
+        assert_eq!(
+            mapped_letter('Z', Some('z'), true, false, false),
+            'z'
+        );
+    }
+
+    #[test]
+    fn chinese_shift_and_uppercase_display_is_ascii() {
+        assert_eq!(mapped_letter('a', Some('A'), true, false, false), 'A');
+        assert_eq!(mapped_letter('A', Some('A'), true, false, false), 'A');
+    }
 }
