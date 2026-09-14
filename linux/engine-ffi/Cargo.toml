@@ -1,0 +1,14 @@
+[package]
+name = "engine-ffi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "C ABI around the 部落输入法 engine for fcitx5 / ibus frontends"
+
+[lib]
+name = "buluo_engine"
+crate-type = ["rlib", "staticlib", "cdylib"]
+path = "src/lib.rs"
+
+[dependencies]
+engine.workspace = true

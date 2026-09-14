@@ -5,19 +5,23 @@ pub mod syllable;
 
 pub use fuzzy::{fuzzy_initials, fuzzy_variants};
 pub use initial::initial_keys;
-pub use parser::{parse_greedy, Segment};
+pub use parser::{full_cut_queries, parse_full_cuts, parse_greedy, Segment};
 pub use syllable::{is_syllable, Syllable};
 
-use parser::{is_separator, normalize_query, respects_greedy_syllable, skip_separators};
+use parser::{
+    is_separator, normalize_query, respects_greedy_syllable, shortens_longest_syllable,
+    skip_separators,
+};
 
 /// Does `input` fully match `syllables` (full pinyin, initials, mixed, and fuzzy)?
 ///
 /// Initial matching is enabled only when the word has two or more syllables.
 /// Fuzzy forms expand the search range only — they do not affect ranking.
 /// An explicit `'` is a syllable boundary (`xi'an` → 西安, `ke'neng` → 可能).
-/// A letter-chunk that is itself one syllable is not split (`xian` → 先,
-/// not 西安). Longer input may use any valid syllable cut so a dictionary
-/// word can win (`keneng` → 可能 = ke+neng, not ken+eng).
+/// A longer valid syllable is not split (`xian` → 先, `xianshi` → 显示,
+/// not 西安 / 西安市). Initials must not steal leftover letters of a
+/// shortened syllable (`danshi` ↛ 大牛市). Alternative full-syllable cuts
+/// are all valid (`keneng` → ke+neng and ken+eng); ranking is by score.
 pub fn matches_word(input: &str, syllables: &[impl AsRef<str>]) -> bool {
     let input = normalize_query(input);
     match_consumed_norm(&input, syllables) == Some(input.len())
@@ -37,7 +41,7 @@ fn match_consumed_norm(input: &str, syllables: &[impl AsRef<str>]) -> Option<usi
         return None;
     }
     let allow_initial = syllables.len() >= 2;
-    consume_from(input, syllables, allow_initial, input.len())
+    consume_from(input, syllables, allow_initial, input.len(), true)
 }
 
 /// True when `input` is an unfinished prefix of the word (e.g. `wod` → 我的).
@@ -49,7 +53,33 @@ pub fn matches_prefix(input: &str, syllables: &[impl AsRef<str>]) -> bool {
         return false;
     }
     let allow_initial = syllables.len() >= 2;
-    prefix_from(&input, syllables, allow_initial, true)
+    prefix_from(&input, syllables, allow_initial, true, true)
+}
+
+/// Greedy-longest full syllables of the consumed prefix match `syllables`
+/// (fuzzy-equivalent). Matching already rejects `xian`→`xi`+`an` and
+/// initial-skip (`danshi` ↛ 大牛市); this is kept for tests and diagnostics.
+pub fn greedy_syllable_cover(
+    input: &str,
+    syllables: &[impl AsRef<str>],
+    consumed: usize,
+) -> bool {
+    let input = normalize_query(input);
+    if consumed == 0 || consumed > input.len() || !input.is_char_boundary(consumed) {
+        return false;
+    }
+    let segs = parse_greedy(&input[..consumed]);
+    if segs.is_empty() || segs.iter().any(|s| matches!(s, Segment::Initial(_))) {
+        return false;
+    }
+    if segs.len() != syllables.len() {
+        return false;
+    }
+    segs.iter().zip(syllables.iter()).all(|(seg, syl)| {
+        fuzzy_variants(syl.as_ref())
+            .iter()
+            .any(|v| v.as_str() == seg.as_str())
+    })
 }
 
 fn consume_from(
@@ -57,6 +87,7 @@ fn consume_from(
     syllables: &[impl AsRef<str>],
     allow_initial: bool,
     orig_len: usize,
+    initials_ok: bool,
 ) -> Option<usize> {
     if syllables.is_empty() {
         let rest = skip_separators(input);
@@ -73,21 +104,23 @@ fn consume_from(
     for variant in fuzzy_variants(head) {
         if let Some(tail) = input.strip_prefix(variant.as_str()) {
             if respects_greedy_syllable(input, variant.as_str()) {
-                if let Some(n) = consume_from(tail, rest, allow_initial, orig_len) {
+                let next_initials = !shortens_longest_syllable(input, variant.as_str());
+                if let Some(n) = consume_from(tail, rest, allow_initial, orig_len, next_initials)
+                {
                     return Some(n);
                 }
             }
         }
     }
 
-    if allow_initial {
+    if allow_initial && initials_ok {
         for key in fuzzy_initials(head) {
             if key.is_empty() {
                 continue;
             }
             if let Some(tail) = input.strip_prefix(key.as_str()) {
                 if respects_greedy_syllable(input, key.as_str()) {
-                    if let Some(n) = consume_from(tail, rest, allow_initial, orig_len) {
+                    if let Some(n) = consume_from(tail, rest, allow_initial, orig_len, true) {
                         return Some(n);
                     }
                 }
@@ -103,6 +136,7 @@ fn prefix_from(
     syllables: &[impl AsRef<str>],
     allow_initial: bool,
     first_syllable: bool,
+    initials_ok: bool,
 ) -> bool {
     let input = skip_separators(input);
     if input.is_empty() {
@@ -118,10 +152,11 @@ fn prefix_from(
 
     for variant in fuzzy_variants(head) {
         if let Some(tail) = input.strip_prefix(variant.as_str()) {
-            if respects_greedy_syllable(input, variant.as_str())
-                && prefix_from(tail, rest, allow_initial, false)
-            {
-                return true;
+            if respects_greedy_syllable(input, variant.as_str()) {
+                let next_initials = !shortens_longest_syllable(input, variant.as_str());
+                if prefix_from(tail, rest, allow_initial, false, next_initials) {
+                    return true;
+                }
             }
         }
         // Unfinished syllable: `zhon` → 中国, `wod` → 我的.
@@ -139,7 +174,7 @@ fn prefix_from(
         }
     }
 
-    if allow_initial {
+    if allow_initial && initials_ok {
         for key in fuzzy_initials(head) {
             if key.is_empty() {
                 continue;
@@ -153,7 +188,7 @@ fn prefix_from(
                 if skip_separators(tail).is_empty() && !rest.is_empty() {
                     continue;
                 }
-                if prefix_from(tail, rest, allow_initial, false) {
+                if prefix_from(tail, rest, allow_initial, false, true) {
                     return true;
                 }
             }
@@ -277,5 +312,27 @@ mod tests {
         assert!(matches_word("keneng", &syls("ken eng")));
         assert_eq!(match_consumed("keneng", &syls("ke neng")), Some(6));
         assert!(!matches_word("xian", &syls("xi an")));
+    }
+
+    #[test]
+    fn xianshi_matches_xian_shi_not_xi_an_shi() {
+        assert!(matches_word("xianshi", &syls("xian shi")));
+        assert!(!matches_word("xianshi", &syls("xi an shi")));
+        assert!(!matches_prefix("xianshi", &syls("xi an shi")));
+        assert!(matches_word("xi'anshi", &syls("xi an shi")));
+        assert!(matches_word("xi'an shi", &syls("xi an shi")));
+        assert!(greedy_syllable_cover("xianshi", &syls("xian shi"), 7));
+        assert!(!greedy_syllable_cover("xianshi", &syls("xi an shi"), 7));
+    }
+
+    #[test]
+    fn danshi_matches_dan_shi_not_da_niu_shi() {
+        assert!(matches_word("danshi", &syls("dan shi")));
+        assert!(!matches_word("danshi", &syls("da niu shi")));
+        assert!(!matches_prefix("danshi", &syls("da niu shi")));
+        assert!(matches_word("daniushi", &syls("da niu shi")));
+        assert!(matches_word("dnshi", &syls("da niu shi")));
+        assert!(greedy_syllable_cover("danshi", &syls("dan shi"), 6));
+        assert!(!greedy_syllable_cover("keneng", &syls("ke neng"), 6));
     }
 }

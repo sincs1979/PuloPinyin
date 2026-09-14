@@ -9,11 +9,44 @@ pub mod learning;
 pub mod pinyin;
 pub mod punct;
 pub mod ranking;
+pub mod symbols;
 
 pub use candidate::{Candidate, CandidateList, PAGE_SIZE};
 pub use dictionary::{BinaryDict, DictEntry};
 pub use engine::{Engine, KeyEvent, SessionOutput};
-pub use pinyin::{match_consumed, matches_prefix, matches_word, Segment, Syllable};
+pub use pinyin::{
+    greedy_syllable_cover, match_consumed, matches_prefix, matches_word, Segment, Syllable,
+};
+
+/// User data directory for `learned.db` / `user.dict`.
+pub fn default_support_dir() -> std::path::PathBuf {
+    let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
+    if cfg!(target_os = "macos") {
+        std::path::PathBuf::from(home).join("Library/Application Support/部落输入法")
+    } else {
+        let base = std::env::var("XDG_DATA_HOME")
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(|_| std::path::PathBuf::from(&home).join(".local/share"));
+        base.join("buluo-ime")
+    }
+}
+
+/// Best-effort path to a compiled `system.dict` (repo, install prefix, or none).
+pub fn default_system_dict() -> Option<std::path::PathBuf> {
+    let mut candidates = Vec::new();
+    candidates.push(
+        std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../resources/system.dict"),
+    );
+    candidates.push(default_support_dir().join("system.dict"));
+    if let Ok(home) = std::env::var("HOME") {
+        let home = std::path::PathBuf::from(home);
+        candidates.push(
+            home.join("Library/Input Methods/BuluoIME.app/Contents/Resources/system.dict"),
+        );
+        candidates.push(home.join(".local/share/fcitx5/buluo/system.dict"));
+    }
+    candidates.into_iter().find(|p| p.exists())
+}
 
 pub type Result<T> = std::result::Result<T, EngineError>;
 

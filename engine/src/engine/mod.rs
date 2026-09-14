@@ -4,10 +4,11 @@ use crate::candidate::{Candidate, CandidateList};
 use crate::dictionary::binary::learned_syllables;
 use crate::dictionary::{load_system_dict, load_user_dict, BinaryDict, DictEntry};
 use crate::learning::{compile_user_dict, should_compile, LearnedDb};
-use crate::pinyin::parser::{is_separator, normalize_query, preedit_marked};
+use crate::pinyin::parser::{full_cut_queries, is_separator, normalize_query, preedit_marked};
 use crate::pinyin::{match_consumed, matches_prefix};
 use crate::punct::{self, QuoteState};
 use crate::ranking::score::{now_unix, score, ScoreInputs};
+use crate::symbols;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
@@ -475,7 +476,9 @@ impl Engine {
         let Some(cand) = self.candidates.current_page().get(page_index).cloned() else {
             return self.output(None);
         };
-        self.learn(&cand);
+        if !symbols::is_symbol_word(&cand.word) {
+            self.learn(&cand);
+        }
         let consumed = cand.consumed.min(self.composing.len());
         // consumed is in normalize_query space (letters + `'`); composing uses the same.
         let leftover = if consumed <= self.composing.len()
@@ -587,6 +590,10 @@ impl Engine {
         if input.is_empty() || input.chars().all(is_separator) {
             return CandidateList::default();
         }
+        // Fixed-slot catalog: never mix with lexicon or user_count ranking.
+        if symbols::is_catalog_key(&input) {
+            return CandidateList::from_sorted(symbols::catalog_candidates(&input));
+        }
         let now = now_unix();
         let mut merged: HashMap<(String, String), Candidate> = HashMap::new();
 
@@ -643,11 +650,16 @@ impl Engine {
                 });
         };
 
-        for e in self.system.lookup_prefix(&input) {
-            consider(e);
-        }
-        for e in self.user.lookup_prefix(&input) {
-            consider(e);
+        // Every valid full-syllable partition is queried (keneng → ken'eng
+        // and ke'neng). Raw input stays so initials / mixed / unfinished
+        // prefixes still hit. Candidates merge; rank is by score.
+        for q in full_cut_queries(&input) {
+            for e in self.system.lookup_prefix(&q) {
+                consider(e);
+            }
+            for e in self.user.lookup_prefix(&q) {
+                consider(e);
+            }
         }
         // Learned words not yet in either binary dict still need to appear.
         for ((word, pinyin), (_count, _last)) in &self.user_stats {
@@ -692,7 +704,6 @@ impl Engine {
             b.complete
                 .cmp(&a.complete)
                 .then_with(|| b.consumed.cmp(&a.consumed))
-                .then_with(|| b.syllables.len().cmp(&a.syllables.len()))
                 .then_with(|| {
                     b.score
                         .partial_cmp(&a.score)
@@ -703,6 +714,15 @@ impl Engine {
         });
         if items.len() > MAX_QUERY {
             items.truncate(MAX_QUERY);
+        }
+        // Exact pinyin/initial keys only — prepend so slh is not buried
+        // under random lexicon hits, and never expand a first-letter bucket.
+        let symbols = symbols::symbol_candidates(&input);
+        if !symbols.is_empty() {
+            items.retain(|c| symbols.iter().all(|s| s.word != c.word));
+            let mut prepended = symbols;
+            prepended.extend(items);
+            items = prepended;
         }
         CandidateList::from_sorted(items)
     }
@@ -1461,6 +1481,184 @@ mod tests {
     }
 
     #[test]
+    fn query_danshi_prefers_but_not_bull_market() {
+        let eng = Engine::in_memory(vec![
+            DictEntry {
+                word: "但是".into(),
+                syllables: vec!["dan".into(), "shi".into()],
+                frequency: 8_000,
+            },
+            DictEntry {
+                word: "大牛市".into(),
+                syllables: vec!["da".into(), "niu".into(), "shi".into()],
+                frequency: 90_000,
+            },
+            DictEntry {
+                word: "大".into(),
+                syllables: vec!["da".into()],
+                frequency: 800_000,
+            },
+            DictEntry {
+                word: "牛".into(),
+                syllables: vec!["niu".into()],
+                frequency: 100_000,
+            },
+            DictEntry {
+                word: "市".into(),
+                syllables: vec!["shi".into()],
+                frequency: 300_000,
+            },
+        ]);
+        let words = query_words(&eng, "danshi");
+        assert_eq!(words.first().map(String::as_str), Some("但是"), "{words:?}");
+        assert_ne!(
+            words.first().map(String::as_str),
+            Some("大牛市"),
+            "danshi must not rank 大牛市 first: {words:?}"
+        );
+
+        let builtin = test_engine();
+        let words = query_words(&builtin, "danshi");
+        assert_eq!(words.first().map(String::as_str), Some("但是"), "{words:?}");
+    }
+
+    #[test]
+    fn query_xianshi_prefers_display_not_xian_city() {
+        let eng = Engine::in_memory(vec![
+            DictEntry {
+                word: "显示".into(),
+                syllables: vec!["xian".into(), "shi".into()],
+                frequency: 8_000,
+            },
+            DictEntry {
+                word: "西安市".into(),
+                syllables: vec!["xi".into(), "an".into(), "shi".into()],
+                frequency: 90_000,
+            },
+            DictEntry {
+                word: "西安".into(),
+                syllables: vec!["xi".into(), "an".into()],
+                frequency: 70_000,
+            },
+            DictEntry {
+                word: "先".into(),
+                syllables: vec!["xian".into()],
+                frequency: 200_000,
+            },
+            DictEntry {
+                word: "市".into(),
+                syllables: vec!["shi".into()],
+                frequency: 300_000,
+            },
+        ]);
+        let words = query_words(&eng, "xianshi");
+        assert_eq!(words.first().map(String::as_str), Some("显示"), "{words:?}");
+        assert_ne!(
+            words.first().map(String::as_str),
+            Some("西安市"),
+            "xianshi must not rank 西安市 first: {words:?}"
+        );
+        let quoted = query_words(&eng, "xi'anshi");
+        assert!(
+            quoted.contains(&"西安市".into()),
+            "xi'anshi must find 西安市: {quoted:?}"
+        );
+
+        let builtin = test_engine();
+        let words = query_words(&builtin, "xianshi");
+        assert_eq!(words.first().map(String::as_str), Some("显示"), "{words:?}");
+    }
+
+    #[test]
+    fn query_keneng_ranks_cuts_by_score_not_fixed_cut() {
+        let possible_first = Engine::in_memory(vec![
+            DictEntry {
+                word: "可能".into(),
+                syllables: vec!["ke".into(), "neng".into()],
+                frequency: 90_000,
+            },
+            DictEntry {
+                word: "肯恩".into(),
+                syllables: vec!["ken".into(), "eng".into()],
+                frequency: 8_000,
+            },
+        ]);
+        let words = query_words(&possible_first, "keneng");
+        assert!(words.contains(&"可能".into()), "{words:?}");
+        assert!(words.contains(&"肯恩".into()), "{words:?}");
+        assert_eq!(words.first().map(String::as_str), Some("可能"), "{words:?}");
+
+        let ken_first = Engine::in_memory(vec![
+            DictEntry {
+                word: "可能".into(),
+                syllables: vec!["ke".into(), "neng".into()],
+                frequency: 8_000,
+            },
+            DictEntry {
+                word: "肯恩".into(),
+                syllables: vec!["ken".into(), "eng".into()],
+                frequency: 90_000,
+            },
+        ]);
+        let words = query_words(&ken_first, "keneng");
+        assert!(words.contains(&"可能".into()), "{words:?}");
+        assert!(words.contains(&"肯恩".into()), "{words:?}");
+        assert_eq!(
+            words.first().map(String::as_str),
+            Some("肯恩"),
+            "higher-freq ken+eng word must beat 可能: {words:?}"
+        );
+    }
+
+    #[test]
+    fn query_keneng_xian_diao_regressions() {
+        let eng = test_engine();
+        let keneng = query_words(&eng, "keneng");
+        assert!(
+            keneng.contains(&"可能".into()),
+            "keneng must find 可能: {keneng:?}"
+        );
+        assert_eq!(keneng.first().map(String::as_str), Some("可能"), "{keneng:?}");
+
+        let xian = query_words(&eng, "xian");
+        assert!(xian.contains(&"先".into()), "xian must include 先: {xian:?}");
+        assert_ne!(xian.first().map(String::as_str), Some("西安"), "{xian:?}");
+        assert!(
+            !xian.contains(&"西安".into()),
+            "xian must not match 西安: {xian:?}"
+        );
+        let xi_an = query_words(&eng, "xi'an");
+        assert!(xi_an.contains(&"西安".into()), "xi'an: {xi_an:?}");
+
+        let diao = Engine::in_memory(vec![
+            DictEntry {
+                word: "掉".into(),
+                syllables: vec!["diao".into()],
+                frequency: 9_000,
+            },
+            DictEntry {
+                word: "低奥".into(),
+                syllables: vec!["di".into(), "ao".into()],
+                frequency: 90_000,
+            },
+        ]);
+        let words = query_words(&diao, "diao");
+        assert_eq!(words.first().map(String::as_str), Some("掉"), "{words:?}");
+        assert!(
+            !words.contains(&"低奥".into()),
+            "diao must not split to di+ao: {words:?}"
+        );
+    }
+
+    fn query_words(eng: &Engine, input: &str) -> Vec<String> {
+        eng.query(input)
+            .items
+            .iter()
+            .map(|c| c.word.clone())
+            .collect()
+    }
+
+    #[test]
     fn query_diao_prefers_diao_not_di_ao() {
         let eng = Engine::in_memory(vec![
             DictEntry {
@@ -1567,14 +1765,178 @@ mod tests {
         );
     }
 
-    fn production_system_dict() -> Option<PathBuf> {
-        let repo = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../resources/system.dict");
-        if repo.exists() {
-            return Some(repo);
+    #[test]
+    fn production_lexicon_danshi_xianshi_keneng_xian_diao() {
+        let Some(dict) = production_system_dict() else {
+            return;
+        };
+        let dir = std::env::temp_dir().join(format!(
+            "pulopinyin-seg-{}-{}",
+            std::process::id(),
+            now_unix()
+        ));
+        let _ = std::fs::create_dir_all(&dir);
+        let eng = Engine::open(Some(&dict), &dir).expect("open production dict");
+        let danshi = query_words(&eng, "danshi");
+        assert_eq!(
+            danshi.first().map(String::as_str),
+            Some("但是"),
+            "danshi: {danshi:?}"
+        );
+        assert_ne!(danshi.first().map(String::as_str), Some("大牛市"));
+        let xianshi = query_words(&eng, "xianshi");
+        assert_eq!(
+            xianshi.first().map(String::as_str),
+            Some("显示"),
+            "xianshi: {xianshi:?}"
+        );
+        assert_ne!(xianshi.first().map(String::as_str), Some("西安市"));
+        let keneng = query_words(&eng, "keneng");
+        assert!(
+            keneng.contains(&"可能".into()),
+            "keneng: {keneng:?}"
+        );
+        let xian = query_words(&eng, "xian");
+        assert!(xian.contains(&"先".into()), "xian: {xian:?}");
+        assert!(!xian.contains(&"西安".into()), "xian must not list 西安: {xian:?}");
+        let xi_an = query_words(&eng, "xi'an");
+        assert!(xi_an.contains(&"西安".into()), "xi'an: {xi_an:?}");
+        let diao = query_words(&eng, "diao");
+        assert!(
+            diao.contains(&"掉".into()),
+            "diao must include 掉: {diao:?}"
+        );
+        assert_ne!(diao.first().map(String::as_str), Some("低奥"));
+        assert_eq!(
+            query_words(&eng, "slh").first().map(String::as_str),
+            Some("\u{2026}"),
+            "production slh must not bury …"
+        );
+        let tsfh = query_words(&eng, "tsfh");
+        assert_eq!(
+            tsfh,
+            crate::symbols::CATALOG
+                .iter()
+                .map(|s| (*s).to_string())
+                .collect::<Vec<_>>(),
+            "production tsfh must stay a fixed catalog"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn query_slh_first_is_ellipsis() {
+        let eng = test_engine();
+        assert_eq!(
+            query_words(&eng, "slh").first().map(String::as_str),
+            Some("\u{2026}"),
+            "slh: {:?}",
+            query_words(&eng, "slh")
+        );
+        assert_eq!(
+            query_words(&eng, "shengluehao").first().map(String::as_str),
+            Some("\u{2026}")
+        );
+    }
+
+    #[test]
+    fn query_dunhao_douhao_and_dh() {
+        let eng = test_engine();
+        assert_eq!(
+            query_words(&eng, "dunhao").first().map(String::as_str),
+            Some("、")
+        );
+        assert_eq!(
+            query_words(&eng, "douhao").first().map(String::as_str),
+            Some("，")
+        );
+        let dh = query_words(&eng, "dh");
+        assert!(dh.contains(&"、".into()), "dh: {dh:?}");
+        assert!(dh.contains(&"，".into()), "dh: {dh:?}");
+        let i_dun = dh.iter().position(|w| w == "、").unwrap();
+        let i_dou = dh.iter().position(|w| w == "，").unwrap();
+        assert!(i_dun < 2 && i_dou < 2, "dh must list both first: {dh:?}");
+    }
+
+    #[test]
+    fn query_tsfh_catalog_is_fixed_pages() {
+        let mut eng = test_engine();
+        let words = query_words(&eng, "tsfh");
+        assert_eq!(
+            words,
+            crate::symbols::CATALOG
+                .iter()
+                .map(|s| (*s).to_string())
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(
+            words[..10].iter().map(|s| s.as_str()).collect::<Vec<_>>(),
+            crate::symbols::CATALOG[..10]
+        );
+        assert_eq!(
+            words[10..20].iter().map(|s| s.as_str()).collect::<Vec<_>>(),
+            crate::symbols::CATALOG[10..20]
+        );
+
+        for alias in ["tesufuhao", "teshufuhao"] {
+            assert_eq!(query_words(&eng, alias), words, "{alias}");
         }
-        let home = std::env::var("HOME").ok()?;
-        let installed = PathBuf::from(home)
-            .join("Library/Input Methods/BuluoIME.app/Contents/Resources/system.dict");
-        installed.exists().then_some(installed)
+
+        type_pinyin(&mut eng, "tsfh");
+        assert_eq!(eng.candidates.page, 0);
+        assert_eq!(
+            eng.candidates.current_page().iter().map(|c| c.word.as_str()).collect::<Vec<_>>(),
+            crate::symbols::CATALOG[..10]
+        );
+        let out = eng.handle_key(KeyEvent::PageNext);
+        assert!(out.consumed);
+        assert_eq!(eng.candidates.page, 1);
+        assert_eq!(
+            out.candidates.iter().map(|c| c.word.as_str()).collect::<Vec<_>>(),
+            crate::symbols::CATALOG[10..20]
+        );
+        let out = eng.handle_key(KeyEvent::Punct('.'));
+        assert_eq!(eng.candidates.page, 2);
+        assert_eq!(
+            out.candidates.iter().map(|c| c.word.as_str()).collect::<Vec<_>>(),
+            crate::symbols::CATALOG[20..30]
+        );
+        let out = eng.handle_key(KeyEvent::Punct(','));
+        assert_eq!(eng.candidates.page, 1);
+        assert_eq!(
+            out.candidates.iter().map(|c| c.word.as_str()).collect::<Vec<_>>(),
+            crate::symbols::CATALOG[10..20]
+        );
+    }
+
+    #[test]
+    fn tsfh_catalog_not_reranked_by_learning() {
+        let mut eng = test_engine();
+        type_pinyin(&mut eng, "tsfh");
+        eng.handle_key(KeyEvent::PageNext);
+        // Select “ (page 2, index 1) many times if learning were applied.
+        for _ in 0..12 {
+            let cand = eng
+                .query("tsfh")
+                .items
+                .into_iter()
+                .find(|c| c.word == "“")
+                .unwrap();
+            eng.learn(&cand);
+        }
+        let after = query_words(&eng, "tsfh");
+        assert_eq!(after[0], "\u{2026}");
+        assert_eq!(after[11], "“");
+        assert_eq!(
+            after,
+            crate::symbols::CATALOG
+                .iter()
+                .map(|s| (*s).to_string())
+                .collect::<Vec<_>>()
+        );
+    }
+
+    fn production_system_dict() -> Option<PathBuf> {
+        crate::default_system_dict()
     }
 }

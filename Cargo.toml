@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["engine", "ime", "tools/dict-compiler"]
+members = ["engine", "ime", "tools/dict-compiler", "linux/engine-ffi"]
 
 [workspace.package]
 version = "0.1.0"

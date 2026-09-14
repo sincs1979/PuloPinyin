@@ -1,0 +1,75 @@
+#!/bin/bash
+# Copy the payload into the console user's Input Methods and register it.
+# $2 is the pkg install-location (see pkgbuild).
+set -euo pipefail
+
+PAYLOAD_DIR="${2:-/Library/Input Methods}"
+PAYLOAD_APP="${PAYLOAD_DIR}/BuluoIME.app"
+APPEX_REL="Contents/PlugIns/BuluoIME.appex"
+LSREG="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+if [[ ! -d "$PAYLOAD_APP" ]]; then
+  echo "postinstall: missing $PAYLOAD_APP" >&2
+  exit 1
+fi
+
+chmod -R a+rX "$PAYLOAD_APP" || true
+
+console_user="$(stat -f '%Su' /dev/console 2>/dev/null || true)"
+if [[ -z "$console_user" || "$console_user" == "root" || "$console_user" == "loginwindow" ]]; then
+  console_user="${USER:-}"
+fi
+
+run_as_user() {
+  if [[ -n "$console_user" && "$console_user" != "root" && "$(id -u)" -eq 0 ]]; then
+    sudo -u "$console_user" "$@"
+  else
+    "$@"
+  fi
+}
+
+register_app() {
+  local app="$1"
+  local appex="${app}/${APPEX_REL}"
+  xattr -cr "$app" 2>/dev/null || true
+  "$LSREG" -f "$app" || true
+  "$LSREG" -f "$appex" 2>/dev/null || true
+  run_as_user pluginkit -a "$appex" 2>/dev/null || true
+  run_as_user pluginkit -e use -i com.buluo.inputmethod.pinyin.extension 2>/dev/null || true
+  if [[ -f "$SCRIPT_DIR/register_ime.swift" ]]; then
+    run_as_user swift "$SCRIPT_DIR/register_ime.swift" "$app" || true
+    run_as_user swift "$SCRIPT_DIR/register_ime.swift" "$appex" || true
+  fi
+}
+
+# System-wide copy (payload). Also mirror into the logged-in user's
+# ~/Library/Input Methods so System Settings lists 部落 without cloning the repo.
+register_app "$PAYLOAD_APP"
+
+if [[ -n "$console_user" && "$console_user" != "root" ]]; then
+  user_home="$(dscl . -read "/Users/${console_user}" NFSHomeDirectory 2>/dev/null | awk '{print $2}')"
+  if [[ -z "$user_home" ]]; then
+    user_home=$(eval echo "~${console_user}")
+  fi
+  if [[ -n "$user_home" && -d "$user_home" ]]; then
+    user_dir="${user_home}/Library/Input Methods"
+    user_app="${user_dir}/BuluoIME.app"
+    mkdir -p "$user_dir"
+    "$LSREG" -u "${user_home}/Library/Input Methods/部落输入法.app" 2>/dev/null || true
+    "$LSREG" -u "${user_home}/Library/Input Methods/PuloPinyin.app" 2>/dev/null || true
+    "$LSREG" -u "$user_app" 2>/dev/null || true
+    pluginkit -r "${user_app}/${APPEX_REL}" 2>/dev/null || true
+    rm -rf "${user_home}/Library/Input Methods/PuloPinyin.app" \
+           "${user_home}/Library/Input Methods/部落输入法.app" \
+           "$user_app"
+    cp -R "$PAYLOAD_APP" "$user_app"
+    if [[ "$(id -u)" -eq 0 ]]; then
+      chown -R "${console_user}:staff" "$user_app" || true
+    fi
+    register_app "$user_app"
+  fi
+fi
+
+killall TextInputMenuAgent TextInputSwitcher 2>/dev/null || true
+exit 0

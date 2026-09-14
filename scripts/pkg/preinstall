@@ -1,0 +1,4 @@
+#!/bin/bash
+set -euo pipefail
+killall PuloPinyin BuluoIME BuluoIMEHost 2>/dev/null || true
+exit 0
