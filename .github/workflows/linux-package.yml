@@ -76,3 +76,12 @@ jobs:
           files: |
             dist/buluo-ime-linux.deb
             dist/buluo-ime-linux.tar.gz
+
+      - name: Commit packages to repo root
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: 部落输入法-linux.deb [skip ci]"
+          file_pattern: "部落输入法-linux.deb 部落输入法-linux.tar.gz"
+          commit_user_name: github-actions[bot]
+          commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com

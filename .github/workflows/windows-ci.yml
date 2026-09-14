@@ -73,6 +73,6 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: 部落输入法-windows.exe [skip ci]"
-          file_pattern: "部落输入法-windows.exe 部落输入法-windows.zip"
+          file_pattern: "部落输入法-windows.exe 部落输入法-windows.zip BuluoIME-windows.exe BuluoIME-windows.zip"
           commit_user_name: github-actions[bot]
           commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com

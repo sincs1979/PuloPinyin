@@ -1,6 +1,9 @@
 #define MyAppName "部落输入法"
 #define MyAppVersion "0.1.0"
 #define SourceDir "..\..\dist\windows"
+; Inno treats `{...}` as a constant. A literal `{` must be written `{{`.
+#define Clsid "{{7B4C0E21-9F3A-4D6B-8E11-2C9F5A7B4D01}"
+#define Profile "{{7B4C0E21-9F3A-4D6B-8E11-2C9F5A7B4D02}"
 
 [Setup]
 AppId={{7B4C0E21-9F3A-4D6B-8E11-2C9F5A7B4D00}
@@ -32,12 +35,12 @@ Source: "{#SourceDir}\register.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\unregister.ps1"; DestDir: "{app}"; Flags: ignoreversion
 
 [Registry]
-Root: HKLM; Subkey: "SOFTWARE\Classes\CLSID\{7B4C0E21-9F3A-4D6B-8E11-2C9F5A7B4D01}"; ValueType: string; ValueName: ""; ValueData: "部落输入法"; Flags: uninsdeletekey
-Root: HKLM; Subkey: "SOFTWARE\Classes\CLSID\{7B4C0E21-9F3A-4D6B-8E11-2C9F5A7B4D01}\InprocServer32"; ValueType: string; ValueName: ""; ValueData: "{app}\ime_win.dll"
-Root: HKLM; Subkey: "SOFTWARE\Classes\CLSID\{7B4C0E21-9F3A-4D6B-8E11-2C9F5A7B4D01}\InprocServer32"; ValueType: string; ValueName: "ThreadingModel"; ValueData: "Apartment"
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\CTF\TIP\{7B4C0E21-9F3A-4D6B-8E11-2C9F5A7B4D01}"; ValueType: string; ValueName: ""; ValueData: "部落输入法"; Flags: uninsdeletekey
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\CTF\TIP\{7B4C0E21-9F3A-4D6B-8E11-2C9F5A7B4D01}\LanguageProfile\0x00000804\{7B4C0E21-9F3A-4D6B-8E11-2C9F5A7B4D02}"; ValueType: dword; ValueName: "Enable"; ValueData: 1
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\CTF\TIP\{7B4C0E21-9F3A-4D6B-8E11-2C9F5A7B4D01}\LanguageProfile\0x00000804\{7B4C0E21-9F3A-4D6B-8E11-2C9F5A7B4D02}"; ValueType: string; ValueName: "Description"; ValueData: "部落输入法"
+Root: HKLM; Subkey: "SOFTWARE\Classes\CLSID\{#Clsid}"; ValueType: string; ValueName: ""; ValueData: "部落输入法"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "SOFTWARE\Classes\CLSID\{#Clsid}\InprocServer32"; ValueType: string; ValueName: ""; ValueData: "{app}\ime_win.dll"
+Root: HKLM; Subkey: "SOFTWARE\Classes\CLSID\{#Clsid}\InprocServer32"; ValueType: string; ValueName: "ThreadingModel"; ValueData: "Apartment"
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\CTF\TIP\{#Clsid}"; ValueType: string; ValueName: ""; ValueData: "部落输入法"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\CTF\TIP\{#Clsid}\LanguageProfile\0x00000804\{#Profile}"; ValueType: dword; ValueName: "Enable"; ValueData: 1
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\CTF\TIP\{#Clsid}\LanguageProfile\0x00000804\{#Profile}"; ValueType: string; ValueName: "Description"; ValueData: "部落输入法"
 
 [Icons]
 Name: "{group}\注册 部落输入法"; Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\register.ps1"" -DllPath ""{app}\ime_win.dll"""
