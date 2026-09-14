@@ -1,0 +1,1148 @@
+# word	pinyin	frequency
+# Common characters
+的	de	5000000
+一	yi	3000000
+是	shi	2500000
+不	bu	2000000
+了	le	1800000
+人	ren	1500000
+我	wo	1400000
+在	zai	1300000
+有	you	1200000
+他	ta	1100000
+这	zhe	1000000
+中	zhong	950000
+大	da	800000
+来	lai	750000
+上	shang	720000
+国	guo	900000
+个	ge	850000
+到	dao	700000
+说	shuo	680000
+们	men	670000
+为	wei	650000
+子	zi	640000
+和	he	630000
+你	ni	620000
+地	di	600000
+出	chu	590000
+道	dao	580000
+也	ye	570000
+时	shi	500000
+要	yao	560000
+就	jiu	550000
+可	ke	540000
+下	xia	530000
+以	yi	520000
+生	sheng	510000
+会	hui	505000
+自	zi	500000
+着	zhe	490000
+去	qu	480000
+之	zhi	470000
+过	guo	560000
+家	jia	450000
+学	xue	440000
+对	dui	430000
+能	neng	420000
+里	li	410000
+后	hou	400000
+小	xiao	390000
+么	me	385000
+心	xin	380000
+多	duo	370000
+天	tian	360000
+而	er	350000
+得	de	340000
+于	yu	330000
+之	zhi	470000
+年	nian	320000
+方	fang	310000
+经	jing	300000
+发	fa	390000
+事	shi	400000
+作	zuo	360000
+当	dang	350000
+没	mei	345000
+看	kan	340000
+只	zhi	300000
+如	ru	290000
+前	qian	280000
+面	mian	335000
+所	suo	270000
+道	dao	580000
+然	ran	260000
+那	na	255000
+还	hai	250000
+用	yong	340000
+第	di	240000
+样	yang	235000
+道	dao	580000
+头	tou	230000
+好	hao	420000
+进	jin	225000
+着	zhe	490000
+同	tong	220000
+现	xian	315000
+面	mian	335000
+开	kai	210000
+手	shou	330000
+十	shi	250000
+用	yong	340000
+主	zhu	205000
+理	li	200000
+无	wu	198000
+力	li	196000
+理	li	200000
+电	dian	194000
+经	jing	300000
+法	fa	380000
+工	gong	280000
+使	shi	200000
+世	shi	180000
+试	shi	150000
+识	shi	140000
+石	shi	120000
+师	shi	130000
+诗	shi	80000
+史	shi	110000
+始	shi	100000
+市	shi	300000
+式	shi	160000
+士	shi	90000
+失	shi	85000
+实	shi	280000
+食	shi	95000
+四	si	200000
+死	si	90000
+似	si	80000
+司	si	70000
+思	si	120000
+私	si	50000
+丝	si	40000
+撕	si	20000
+寺	si	30000
+兰	lan	60000
+蓝	lan	70000
+栏	lan	40000
+拦	lan	25000
+览	lan	35000
+懒	lan	30000
+烂	lan	50000
+然	ran	260000
+染	ran	40000
+燃	ran	35000
+让	rang	180000
+藏	zang	80000
+脏	zang	40000
+葬	zang	25000
+张	zhang	220000
+长	zhang	240000
+章	zhang	150000
+掌	zhang	80000
+丈	zhang	40000
+涨	zhang	50000
+帐	zhang	45000
+账	zhang	55000
+资	zi	160000
+格	ge	180000
+最	zui	210000
+高	gao	300000
+输	shu	90000
+入	ru	200000
+苹	ping	40000
+果	guo	180000
+机	ji	260000
+商	shang	150000
+品	pin	170000
+书	shu	200000
+水	shui	190000
+火	huo	180000
+山	shan	170000
+口	kou	160000
+日	ri	200000
+月	yue	190000
+木	mu	120000
+金	jin	180000
+土	tu	110000
+女	nv	150000
+男	nan	140000
+子	zi	640000
+语	yu	130000
+言	yan	140000
+文	wen	200000
+字	zi	210000
+汉	han	120000
+英	ying	130000
+美	mei	140000
+国	guo	900000
+人	ren	1500000
+你	ni	620000
+好	hao	420000
+吗	ma	200000
+吧	ba	150000
+啊	a	180000
+哦	o	80000
+嗯	en	70000
+额	e	60000
+# Common words
+中国	zhong guo	900000
+这个	zhe ge	700000
+资格	zi ge	40000
+最高	zui gao	60000
+我们	wo men	800000
+他们	ta men	600000
+自己	zi ji	500000
+什么	shen me	650000
+没有	mei you	550000
+可以	ke yi	480000
+不是	bu shi	500000
+一个	yi ge	700000
+这个	zhe ge	700000
+那个	na ge	300000
+现在	xian zai	400000
+因为	yin wei	280000
+所以	suo yi	260000
+如果	ru guo	240000
+我的	wo de	502376
+妈	ma	956493
+呀	ya	673765
+妈呀	ma ya	15370
+几次	ji ci	337320
+但是	dan shi	250000
+然后	ran hou	220000
+已经	yi jing	230000
+还是	hai shi	210000
+或者	huo zhe	180000
+问题	wen ti	200000
+工作	gong zuo	280000
+时间	shi jian	320000
+生活	sheng huo	240000
+世界	shi jie	200000
+今天	jin tian	260000
+明天	ming tian	180000
+昨天	zuo tian	150000
+时候	shi hou	300000
+东西	dong xi	200000
+地方	di fang	180000
+朋友	peng you	200000
+老师	lao shi	160000
+学生	xue sheng	180000
+学校	xue xiao	170000
+大学	da xue	150000
+电脑	dian nao	140000
+手机	shou ji	200000
+苹果	ping guo	80000
+苹果手机	ping guo shou ji	8000
+输入	shu ru	50000
+输入法	shu ru fa	30000
+拼音	pin yin	40000
+汉字	han zi	50000
+中文	zhong wen	80000
+英文	ying wen	90000
+语言	yu yan	70000
+系统	xi tong	90000
+软件	ruan jian	90000
+程序	cheng xu	70000
+代码	dai ma	40000
+开发	kai fa	80000
+项目	xiang mu	60000
+文件	wen jian	100000
+设置	she zhi	80000
+网络	wang luo	150000
+键盘	jian pan	30000
+鼠标	shu biao	40000
+屏幕	ping mu	50000
+窗口	chuang kou	40000
+候选	hou xuan	10000
+词库	ci ku	8000
+词频	ci pin	6000
+用户	yong hu	120000
+习惯	xi guan	40000
+速度	su du	50000
+极简	ji jian	8000
+极速	ji su	7000
+商品	shang pin	90000
+上品	shang pin	20000
+产品	chan pin	120000
+出品	chu pin	20000
+品牌	pin pai	80000
+质量	zhi liang	90000
+价格	jia ge	80000
+市场	shi chang	100000
+公司	gong si	150000
+企业	qi ye	100000
+国家	guo jia	400000
+政府	zheng fu	150000
+人民	ren min	180000
+北京	bei jing	200000
+上海	shang hai	180000
+广州	guang zhou	100000
+深圳	shen zhen	110000
+杭州	hang zhou	80000
+成都	cheng du	80000
+重庆	chong qing	90000
+天津	tian jin	70000
+南京	nan jing	70000
+武汉	wu han	70000
+西安	xi an	70000
+香港	xiang gang	90000
+台湾	tai wan	80000
+美国	mei guo	160000
+日本	ri ben	120000
+英国	ying Guo	90000
+英国	ying guo	90000
+德国	de guo	70000
+法国	fa Guo	60000
+法国	fa guo	60000
+韩国	han guo	80000
+印度	yin du	50000
+俄罗斯	e luo si	40000
+世界	shi jie	200000
+地球	di qiu	60000
+宇宙	yu zhou	40000
+科学	ke xue	100000
+技术	ji shu	120000
+艺术	yi shu	70000
+音乐	yin yue	90000
+电影	dian ying	140000
+电视	dian shi	120000
+新闻	xin wen	100000
+历史	li shi	120000
+文化	wen hua	130000
+经济	jing ji	140000
+政治	zheng zhi	90000
+社会	she hui	140000
+法律	fa lv	80000
+教育	jiao yu	110000
+医学	yi xue	60000
+医院	yi yuan	90000
+医生	yi sheng	80000
+健康	jian kang	90000
+身体	shen ti	80000
+吃饭	chi fan	70000
+睡觉	shui jiao	80000
+工作	gong zuo	280000
+学习	xue xi	200000
+思考	si kao	50000
+知道	zhi dao	300000
+认为	ren wei	180000
+觉得	jue de	200000
+希望	xi wang	150000
+需要	xu yao	200000
+应该	ying gai	180000
+可能	ke neng	220000
+一定	yi ding	160000
+必须	bi xu	120000
+已经	yi jing	230000
+正在	zheng zai	140000
+开始	kai shi	180000
+结束	jie shu	80000
+完成	wan cheng	100000
+成功	cheng gong	90000
+失败	shi bai	50000
+重要	zhong yao	180000
+简单	jian dan	100000
+复杂	fu za	70000
+容易	rong yi	80000
+困难	kun nan	70000
+快乐	kuai le	80000
+高兴	gao xing	90000
+开心	kai xin	80000
+难过	nan Guo	50000
+难过	nan guo	50000
+喜欢	xi huan	200000
+爱	ai	200000
+谢谢	xie xie	120000
+对不起	dui bu qi	80000
+没关系	mei guan xi	70000
+再见	zai jian	80000
+你好	ni hao	200000
+请问	qing wen	40000
+帮助	bang zhu	90000
+支持	zhi chi	80000
+选择	xuan ze	90000
+决定	jue ding	80000
+发现	fa xian	150000
+出现	chu xian	140000
+发生	fa sheng	120000
+进行	jin xing	160000
+成为	cheng wei	150000
+通过	tong guo	140000
+产生	chan sheng	90000
+提供	ti gong	110000
+使用	shi yong	200000
+增加	zeng jia	80000
+减少	jian shao	50000
+提高	ti gao	90000
+改变	gai bian	90000
+发展	fa zhan	160000
+建设	jian she	90000
+管理	guan li	120000
+服务	fu wu	130000
+信息	xin xi	140000
+数据	shu ju	100000
+内容	nei rong	90000
+方法	fang fa	130000
+结果	jie Guo	90000
+结果	jie Guo	90000
+结果	jie Guo	90000
+结果	jie guo	90000
+原因	yuan yin	80000
+情况	qing kuang	110000
+条件	tiao jian	80000
+过程	guo cheng	90000
+作用	zuo yong	80000
+意义	yi yi	70000
+目的	mu di	80000
+要求	yao qiu	100000
+标准	biao zhun	80000
+水平	shui ping	70000
+能力	neng li	90000
+经验	jing yan	80000
+知识	zhi shi	90000
+理解	li jie	80000
+分析	fen xi	80000
+研究	yan jiu	110000
+设计	she ji	100000
+计划	ji hua	80000
+报告	bao Gao	70000
+报告	bao gao	70000
+会议	hui yi	70000
+电话	dian hua	100000
+邮件	you jian	60000
+网站	wang zhan	80000
+软件	ruan jian	90000
+硬件	ying jian	40000
+安全	an quan	110000
+密码	mi ma	50000
+账户	zhang hu	50000
+登录	deng lu	40000
+注册	zhu ce	40000
+搜索	sou suo	70000
+下载	xia zai	70000
+安装	an zhuang	60000
+更新	geng xin	60000
+版本	ban ben	50000
+功能	gong neng	90000
+界面	jie mian	40000
+快捷	kuai jie	20000
+响应	xiang ying	40000
+速度	su du	50000
+内存	nei cun	30000
+查询	cha xun	40000
+候选	hou xuan	10000
+排序	pai xu	20000
+词频	ci pin	6000
+学习	xue xi	200000
+记录	ji lu	70000
+数据库	shu ju ku	40000
+二进制	er jin zhi	8000
+索引	suo yin	20000
+缓存	huan cun	20000
+性能	xing neng	40000
+测试	ce shi	70000
+安装	an zhuang	60000
+配置	pei zhi	50000
+默认	mo ren	40000
+开启	kai qi	40000
+关闭	guan bi	50000
+切换	qie huan	50000
+中文	zhong wen	80000
+英文	ying wen	90000
+空格	kong ge	20000
+回车	hui che	15000
+翻页	fan ye	8000
+候选窗	hou xuan chuang	3000
+仓库	cang ku	20000
+鱼竿	yu gan	5000
+智利	zhi li	8000
+智利	zhi li	8000
+这里	zhe li	200000
+那里	na li	120000
+哪里	na li	100000
+怎么	zen me	250000
+为什么	wei shen me	180000
+怎样	zen yang	80000
+多少	duo shao	150000
+几个	ji ge	120000
+第一	di yi	150000
+最后	zui hou	120000
+首先	shou xian	90000
+其次	qi ci	40000
+同时	tong shi	140000
+另外	ling wai	80000
+ besides	bi ci	1000
+其他	qi ta	140000
+全部	quan bu	120000
+部分	bu fen	110000
+一些	yi xie	200000
+很多	hen duo	180000
+非常	fei chang	180000
+特别	te bie	120000
+一般	yi ban	110000
+当然	dang ran	130000
+其实	qi shi	140000
+确实	que shi	90000
+可能	ke neng	220000
+大概	da gai	80000
+也许	ye xu	70000
+似乎	si hu	60000
+显然	xian ran	50000
+显然	xian ran	50000
+终于	zhong yu	70000
+突然	tu ran	80000
+立刻	li ke	50000
+马上	ma shang	90000
+一直	yi zhi	150000
+经常	jing chang	100000
+有时	you shi	80000
+偶尔	ou er	40000
+永远	yong yuan	80000
+暂时	zan shi	40000
+目前	mu qian	100000
+将来	jiang lai	60000
+过去	guo qu	120000
+现在	xian zai	400000
+未来	wei lai	80000
+今天	jin tian	260000
+今年	jin nian	100000
+最近	zui jin	110000
+以前	yi qian	140000
+以后	yi hou	130000
+之前	zhi qian	120000
+之后	zhi hou	110000
+之间	zhi jian	100000
+以上	yi shang	80000
+以下	yi xia	70000
+以内	yi nei	30000
+以外	yi wai	40000
+左边	zuo bian	40000
+右边	you bian	40000
+前面	qian mian	90000
+后面	hou mian	90000
+上面	shang mian	80000
+下面	xia mian	80000
+里面	li mian	120000
+外面	wai mian	90000
+中间	zhong jian	80000
+旁边	pang bian	50000
+附近	fu jin	60000
+远处	yuan chu	20000
+这里	zhe li	200000
+那边	na bian	60000
+这边	zhe bian	70000
+哪里	na li	100000
+哪儿	na er	40000
+怎么	zen me	250000
+这样	zhe yang	220000
+那样	na yang	80000
+怎样	zen yang	80000
+如此	ru ci	50000
+于是	yu shi	60000
+因此	yin ci	70000
+由于	you yu	90000
+尽管	jin guan	50000
+虽然	sui ran	90000
+但是	dan shi	250000
+不过	bu Guo	120000
+不过	bu guo	120000
+而且	er qie	120000
+并且	bing qie	80000
+或者	huo zhe	180000
+还是	hai shi	210000
+不是	bu shi	500000
+只是	zhi shi	100000
+总是	zong shi	90000
+就是	jiu shi	300000
+还是	hai shi	210000
+也是	ye shi	160000
+真是	zhen shi	80000
+正是	zheng shi	70000
+若是	ruo shi	20000
+于是	yu shi	60000
+于是	yu shi	60000
+可是	ke shi	120000
+倒是	dao shi	30000
+老是	lao shi	40000
+光是	guang shi	20000
+凡是	fan shi	20000
+是否	shi fou	60000
+事实	shi shi	70000
+事情	shi qing	150000
+事故	shi gu	40000
+故事	gu shi	100000
+军事	jun shi	40000
+人事	ren shi	30000
+同事	tong shi	70000
+从事	cong shi	40000
+办事	ban shi	40000
+做事	zuo shi	80000
+实事	shi shi	20000
+本事	ben shi	30000
+没事	mei shi	90000
+有事	you shi	60000
+没事	mei shi	90000
+# r/l pairs
+人	ren	1500000
+任	ren	80000
+认	ren	200000
+忍	ren	40000
+刃	ren	15000
+林	lin	120000
+临	lin	60000
+邻	lin	40000
+淋	lin	20000
+路	lu	150000
+如	ru	290000
+入	ru	200000
+来	lai	750000
+# more useful words
+输入法	shu ru fa	30000
+拼音输入	pin yin shu ru	5000
+极简	ji jian	8000
+记得	ji de	60000
+记住	ji zhu	50000
+记忆	ji yi	40000
+习惯	xi guan	40000
+个人	ge ren	120000
+词库	ci ku	8000
+基础	ji chu	80000
+查询	cha xun	40000
+候选	hou xuan	10000
+窗口	chuang kou	40000
+数字	shu zi	60000
+选词	xuan ci	5000
+翻页	fan ye	8000
+中英	zhong ying	10000
+切换	qie huan	50000
+键盘	jian pan	30000
+事件	shi jian	60000
+应用	ying yong	100000
+程序	cheng xu	70000
+运行	yun xing	70000
+启动	qi dong	60000
+关闭	guan bi	50000
+安装	an zhuang	60000
+卸载	xie zai	20000
+启用	qi yong	40000
+禁用	jin yong	20000
+设置	she zhi	80000
+系统设置	xi tong she zhi	20000
+键盘	jian pan	30000
+输入法	shu ru fa	30000
+中国人	zhong Guo ren	80000
+中国人	zhong guo ren	120000
+中文	zhong wen	80000
+汉语	han yu	60000
+普通话	pu tong hua	40000
+简体	jian ti	20000
+繁体	fan ti	20000
+字符	zi fu	30000
+汉字	han zi	50000
+字母	zi mu	40000
+音节	yin jie	10000
+声母	sheng mu	5000
+韵母	yun mu	5000
+模糊	mo hu	30000
+平舌	ping she	3000
+翘舌	qiao she	3000
+首拼	shou pin	4000
+全拼	quan pin	8000
+混输	hun shu	2000
+词频	ci pin	6000
+排序	pai xu	20000
+学习	xue xi	200000
+用户	yong hu	120000
+个人	ge ren	120000
+习惯	xi guan	40000
+最近	zui jin	110000
+使用	shi yong	200000
+次数	ci shu	40000
+时间	shi jian	320000
+数据库	shu ju ku	40000
+二进制	er jin zhi	8000
+编译	bian yi	30000
+整理	zheng li	40000
+合并	he bing	30000
+去重	qu zhong	5000
+索引	suo yin	20000
+加速	jia su	20000
+查询	cha xun	40000
+匹配	pi pei	30000
+精确	jing que	30000
+模糊音	mo hu yin	4000
+等价	deng jia	20000
+形式	xing shi	60000
+候选	hou xuan	10000
+列表	lie biao	40000
+分页	fen ye	10000
+稳定	wen ding	50000
+跳动	tiao dong	10000
+遮挡	zhe dang	8000
+正文	zheng wen	30000
+两行	liang hang	5000
+五列	wu lie	2000
+数字	shu zi	60000
+空格	kong ge	20000
+逗号	dou hao	15000
+句号	ju hao	15000
+标点	biao dian	20000
+功能	gong neng	90000
+效率	xiao lv	50000
+响应	xiang ying	40000
+毫秒	hao miao	10000
+内存	nei cun	30000
+断网	duan wang	10000
+离线	li xian	30000
+本地	ben di	70000
+词库	ci ku	8000
+开源	kai yuan	40000
+筛选	shai xuan	20000
+精简	jing jian	15000
+常用	chang yong	80000
+汉字	han zi	50000
+双字	shuang zi	5000
+三字	san zi	4000
+多字	duo zi	3000
+词组	ci zu	20000
+单字	dan zi	15000
+限制	xian zhi	50000
+展开	zhan kai	40000
+无意义	wu yi yi	8000
+原则	yuan ze	60000
+固定	gu ding	40000
+规则	gui ze	70000
+禁止	jin zhi	40000
+降权	jiang quan	3000
+精确	jing que	30000
+候选池	hou xuan chi	2000
+统一	tong yi	80000
+排序	pai xu	20000
+习惯	xi guan	40000
+例如	li ru	100000
+完全	wan quan	120000
+允许	yun xu	70000
+即使	ji shi	80000
+来自	lai zi	90000
+进行	jin xing	160000
+任何	ren he	140000
+降权	jiang quan	3000
+同样	tong yang	100000
+属于	shu yu	80000
+正常	zheng chang	100000
+方式	fang shi	130000
+找到	zhao dao	120000
+不得	bu de	40000
+因为	yin wei	280000
+降低	jiang di	50000
+排名	pai ming	40000
+进入	jin ru	110000
+统一	tong yi	80000
+以后	yi hou	130000
+参与	can yu	70000
+最终	zui zhong	90000
+核心	he xin	80000
+只有	zhi you	180000
+模型	mo xing	50000
+概念	gai nian	60000
+实际	shi ji	100000
+实现	shi xian	120000
+使用	shi yong	200000
+避免	bi mian	70000
+原始	yuan shi	40000
+数字	shu zi	60000
+无限	wu xian	50000
+膨胀	peng zhang	15000
+优先	you xian	70000
+必须	bi xu	120000
+越用	yue yong	5000
+符合	fu he	80000
+公共	gong gong	70000
+长期	chang qi	80000
+选择	xuan ze	90000
+个人	ge ren	120000
+逐渐	zhu jian	50000
+超过	chao Guo	80000
+超过	chao Guo	80000
+超过	chao guo	80000
+最终	zui zhong	90000
+可能	ke neng	220000
+变成	bian cheng	100000
+每次	mei ci	90000
+同时	tong shi	140000
+更新	geng xin	60000
+过程	guo cheng	90000
+不得	bu de	40000
+阻塞	zu se	10000
+正常	zheng chang	100000
+经常	jing chang	100000
+系统	xi tong	90000
+基础	ji chu	80000
+存在	cun zai	160000
+自动	zi dong	120000
+加入	jia ru	80000
+个人	ge ren	120000
+不要求	bu yao qiu	10000
+打开	da kai	100000
+设置	she zhi	80000
+点击	dian ji	60000
+添加	tian jia	80000
+手动	shou dong	40000
+填写	tian xie	30000
+原则	yuan ze	60000
+用过	yong Guo	20000
+用过	yong Guo	20000
+用过	yong Guo	20000
+用过	yong guo	20000
+记住	ji zhu	50000
+初始	chu shi	40000
+追求	zhui qiu	50000
+大型	da xing	50000
+第一	di yi	150000
+只需要	zhi xu yao	40000
+常用	chang yong	80000
+少量	shao liang	40000
+常见	chang jian	80000
+开源	kai yuan	40000
+数据	shu ju	100000
+筛选	shai xuan	20000
+但是	dan shi	250000
+直接	zhi jie	160000
+完整	wan zheng	80000
+庞大	pang da	30000
+全部	quan bu	120000
+塞进	sai jin	5000
+建立	jian li	100000
+自己	zi ji	500000
+精简	jing jian	15000
+生成	sheng cheng	70000
+工具	gong ju	80000
+以后	yi hou	130000
+根据	gen ju	140000
+实际	shi ji	100000
+使用	shi yong	200000
+逐渐	zhu jian	50000
+扩大	kuo da	40000
+三层	san ceng	8000
+架构	jia gou	40000
+采用	cai yong	80000
+系统	xi tong	90000
+基础	ji chu	80000
+特点	te dian	60000
+只读	zhi du	8000
+随程序	sui cheng xu	2000
+发布	fa bu	70000
+主要	zhu yao	140000
+保存	bao cun	80000
+拼音	pin yin	40000
+词语	ci yu	40000
+实时	shi shi	60000
+负责	fu ze	80000
+最近	zui jin	110000
+学习	xue xi	200000
+新词	xin ci	15000
+选择	xuan ze	90000
+次数	ci shu	40000
+最近	zui jin	110000
+尚未	shang wei	40000
+编译	bian yi	30000
+例如	li ru	100000
+主要	zhu yao	140000
+定期	ding qi	40000
+整理	zheng li	40000
+产生	chan sheng	90000
+由	you	200000
+积累	ji lei	30000
+一定	yi ding	160000
+程度	cheng du	70000
+满足	man zu	70000
+新增	xin zeng	50000
+距离	ju li	60000
+上次	shang ci	50000
+空闲	kong xian	30000
+执行	zhi xing	80000
+读取	du qu	40000
+去重	qu zhong	5000
+合并	he bing	30000
+更新	geng xin	60000
+排序	pai xu	20000
+编译	bian yi	30000
+以后	yi hou	130000
+主要	zhu yao	140000
+处理	chu li	130000
+尚未	shang wei	40000
+最新	zui xin	90000
+变化	bian hua	100000
+不是	bu shi	500000
+原始	yuan shi	40000
+非常	fei chang	180000
+重要	zhong yao	180000
+只是	zhi shi	100000
+加速	jia su	20000
+索引	suo yin	20000
+用户	yong hu	120000
+多年	duo nian	50000
+积累	ji lei	30000
+不能	bu neng	180000
+只存在	zhi cun zai	8000
+必须	bi xu	120000
+保留	bao liu	60000
+可靠	ke kao	40000
+持久	chi jiu	30000
+即使	ji shi	80000
+损坏	sun huai	20000
+也必须	ye bi xu	8000
+可以	ke yi	480000
+重新	zhong xin	100000
+生成	sheng cheng	70000
+完整	wan zheng	80000
+流程	liu cheng	70000
+键盘	jian pan	30000
+输入	shu ru	50000
+解析	jie xi	40000
+切分	qie fen	8000
+识别	shi bie	50000
+生成	sheng cheng	70000
+等价	deng jia	20000
+查询	cha xun	40000
+合并	he bing	30000
+去重	qu zhong	5000
+读取	du qu	40000
+统一	tong yi	80000
+评分	ping fen	20000
+排序	pai xu	20000
+分页	fen ye	10000
+候选	hou xuan	10000
+窗口	chuang kou	40000
+固定	gu ding	40000
+每页	mei ye	8000
+显示	xian shi	100000
+两行	liang hang	5000
+每行	mei hang	8000
+当前	dang qian	140000
+快捷	kuai jie	20000
+不是	bu shi	500000
+全局	quan ju	40000
+编号	bian hao	20000
+因此	yin ci	70000
+第一	di yi	150000
+仍然	reng ran	70000
+第三	di san	60000
+示例	shi li	40000
+排名	pai ming	40000
+按键	an jian	20000
+直接	zhi jie	160000
+选择	xuan ze	90000
+翻页	fan ye	8000
+重新	zhong xin	100000
+第一次	di yi ci	60000
+完成	wan cheng	100000
+以后	yi hou	130000
+得到	de dao	140000
+已经	yi jing	230000
+完成	wan cheng	100000
+统一	tong yi	80000
+只是	zhi shi	100000
+不得	bu de	40000
+重新	zhong xin	100000
+计算	ji suan	70000
+改变	gai bian	90000
+顺序	shun xu	50000
+避免	bi mian	70000
+过程	guo cheng	90000
+跳动	tiao dong	10000
+设计	she ji	100000
+原则	yuan ze	60000
+只负责	zhi fu ze	8000
+快速	kuai su	70000
+选字	xuan zi	8000
+因此	yin ci	70000
+不要	bu yao	160000
+图片	tu pian	80000
+动画	dong hua	40000
+词性	ci xing	8000
+网络	wang luo	150000
+结果	jie guo	90000
+解释	jie shi	70000
+复杂	fu za	70000
+颜色	yan se	50000
+多余	duo yu	30000
+按钮	an niu	30000
+要求	yao qiu	100000
+稳定	wen ding	50000
+不遮挡	bu zhe dang	3000
+正文	zheng wen	30000
+不跳动	bu tiao dong	2000
+性能	xing neng	40000
+目标	mu biao	80000
+这是	zhe shi	150000
+优先	you xian	70000
+项目	xiang mu	60000
+候选	hou xuan	10000
+查询	cha xun	40000
+正常	zheng chang	100000
+击键	ji jian	5000
+响应	xiang ying	40000
+内存	nei cun	30000
+阶段	jie duan	50000
+努力	nu li	70000
+控制	kong zhi	90000
+禁止	jin zhi	40000
+路径	lu jing	40000
+联网	lian wang	20000
+正常	zheng chang	100000
+过程	guo cheng	90000
+依赖	yi lai	60000
+网络	wang luo	150000
+更新	geng xin	60000
+服务器	fu wu qi	60000
+用户	yong hu	120000
+账号	zhang hao	40000
+即使	ji shi	80000
+完全	wan quan	120000
+断网	duan wang	10000
+全部	quan bu	120000
+功能	gong neng	90000
+仍然	reng ran	70000
+正常	zheng chang	100000
+工作	gong zuo	280000
+模块	mo kuai	40000
+规划	gui hua	40000
+独立	du li	50000
+工具	gong ju	80000
+负责	fu ze	80000
+来源	lai yuan	50000
+读取	du qu	40000
+清洗	qing xi	20000
+筛选	shai xuan	20000
+标准	biao zhun	80000
+去重	qu zhong	5000
+基础	ji chu	80000
+整理	zheng li	40000
+生成	sheng cheng	70000
+同时	tong shi	140000
+个人	ge ren	120000
+开发	kai fa	80000
+顺序	shun xu	50000
+建立	jian li	100000
+完整	wan zheng	80000
+合法	he fa	40000
+实现	shi xian	120000
+混合	hun he	40000
+解析	jie xi	40000
+最小	zui xiao	50000
+测试	ce shi	70000
+词库	ci ku	8000
+统一	tong yi	80000
+接入	jie ru	40000
+集成	ji cheng	50000
+真实	zhen shi	70000
+应用	ying yong	100000
+测试	ce shi	70000
+优化	you hua	50000
+打通	da tong	20000
+最小	zui xiao	50000
+闭环	bi huan	8000
+第一	di yi	150000
+不要	bu yao	160000
+试图	shi tu	40000
+完成	wan cheng	100000
+整个	zheng ge	140000
+目标	mu biao	80000
+真正	zhen zheng	100000
+输入	shu ru	50000
+第一个	di yi ge	80000
+中文	zhong wen	80000
+必须	bi xu	120000
+最小	zui xiao	50000
+拼音	pin yin	40000
+解析	jie xi	40000
+最小	zui xiao	50000
+词库	ci ku	8000
+候选	hou xuan	10000
+窗口	chuang kou	40000
+选词	xuan ci	5000
+上屏	shang ping	6000
+验收	yan shou	20000
+安装	an zhuang	60000
+系统	xi tong	90000
+设置	she zhi	80000
+键盘	jian pan	30000
+启用	qi yong	40000
+切换	qie huan	50000
+显示	xian shi	100000
+当前	dang qian	140000
+出现	chu xian	140000
+第二	di er	90000
+首拼	shou pin	4000
+必须	bi xu	120000
+能够	neng gou	100000
+找到	zhao dao	120000
+第三	di san	60000
+模糊	mo hu	30000
+同时	tong shi	140000
+允许	yun xu	70000
+产生	chan sheng	90000
+候选	hou xuan	10000
+匹配	pi pei	30000
+不得	bu de	40000
+自动	zi dong	120000
+降权	jiang quan	3000
+第四	di si	40000
+连续	lian xu	50000
+某个	mou ge	60000
+非	fei	80000
+重新	zhong xin	100000
+相同	xiang tong	90000
+该	gai	120000
+排名	pai ming	40000
+必须	bi xu	120000
+明显	ming xian	70000
+上升	shang sheng	40000
+关闭	guan bi	50000
+甚至	shen zhi	70000
+重新	zhong xin	100000
+启动	qi dong	60000
+以后	yi hou	130000
+仍然	reng ran	70000
+存在	cun zai	160000
+铁则	tie ze	2000
+任何	ren he	140000
+新	xin	200000
+功能	gong neng	90000
+加入	jia ru	80000
+之前	zhi qian	120000
+先	xian	200000
+回答	hui da	70000
+是否	shi fou	60000
+直接	zhi jie	160000
+提高	ti gao	90000
+效率	xiao lv	50000
+如果	ru guo	240000
+答案	da an	70000
+否定	fou ding	20000
+不做	bu zuo	40000
+长期	chang qi	80000
+优先级	you xian ji	20000
+响应	xiang ying	40000
+速度	su du	50000
+准确	zhun que	60000
+个人	ge ren	120000
+数量	shu liang	80000
+一句	yi ju	40000
+话	hua	200000
+定义	ding yi	70000
+一个	yi ge	700000
+编写	bian xie	40000
+支持	zhi chi	80000
+全拼	quan pin	8000
+首拼	shou pin	4000
+模糊	mo hu	30000
+个人	ge ren	120000
+词频	ci pin	6000
+学习	xue xi	200000
+极简	ji jian	8000
+极速	ji su	7000
+拼音	pin yin	40000
+输入法	shu ru fa	30000

@@ -1,0 +1,4 @@
+/* Localized versions of Info.plist keys */
+CFBundleDisplayName = "部落输入法";
+CFBundleName = "部落输入法";
+"com.buluo.inputmethod.pinyin.Hans" = "部落输入法";

@@ -1,0 +1,14 @@
+[workspace]
+resolver = "2"
+members = ["engine", "ime", "tools/dict-compiler"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["部落输入法"]
+repository = "https://github.com/pulopinyin/pulopinyin"
+
+[workspace.dependencies]
+engine = { path = "engine" }
+rusqlite = { version = "0.32", features = ["bundled"] }

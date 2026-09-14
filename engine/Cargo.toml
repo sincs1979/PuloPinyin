@@ -1,0 +1,13 @@
+[package]
+name = "engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "部落输入法 core: pinyin parsing, dictionary, ranking, and learning"
+
+[lib]
+name = "engine"
+path = "src/lib.rs"
+
+[dependencies]
+rusqlite.workspace = true

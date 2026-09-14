@@ -1,0 +1,13 @@
+[package]
+name = "dict-compiler"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Compile TSV / learned.db into 部落输入法 binary dictionaries"
+
+[[bin]]
+name = "dict-compiler"
+path = "src/main.rs"
+
+[dependencies]
+engine.workspace = true
