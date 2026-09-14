@@ -326,6 +326,18 @@ mod tests {
     }
 
     #[test]
+    fn lue_matches_lve_not_lu() {
+        assert!(matches_word("lue", &syls("lve")));
+        assert!(matches_word("lve", &syls("lve")));
+        assert!(matches_word("lue", &syls("lue")));
+        assert!(!matches_word("lue", &syls("lu")));
+        assert!(!matches_word("lu", &syls("lve")));
+        assert!(matches_word("shengluehao", &syls("sheng lve hao")));
+        assert!(matches_word("shenglvehao", &syls("sheng lve hao")));
+        assert!(matches_word("nue", &syls("nve")));
+    }
+
+    #[test]
     fn danshi_matches_dan_shi_not_da_niu_shi() {
         assert!(matches_word("danshi", &syls("dan shi")));
         assert!(!matches_word("danshi", &syls("da niu shi")));

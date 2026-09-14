@@ -12,8 +12,10 @@ pub fn fuzzy_variants(syllable: &str) -> Vec<String> {
     let mut out = Vec::new();
     for zh in expand_zh_group(syllable) {
         for rl in expand_rl(&zh) {
-            if !out.iter().any(|s| s == &rl) {
-                out.push(rl);
+            for ue in expand_ue_ve(&rl) {
+                if !out.iter().any(|s| s == &ue) {
+                    out.push(ue);
+                }
             }
         }
     }
@@ -68,6 +70,18 @@ fn expand_rl(s: &str) -> Vec<String> {
     }
 }
 
+/// `üe` after `l`/`n` is typed both as `lve` (v = ü) and `lue` (Sogou / 微软).
+/// Do not alias `lu`↔`lv` or `nu`↔`nv` — those are different syllables (路 vs 吕).
+fn expand_ue_ve(s: &str) -> Vec<String> {
+    match s {
+        "lue" => vec![s.to_string(), "lve".into()],
+        "lve" => vec![s.to_string(), "lue".into()],
+        "nue" => vec![s.to_string(), "nve".into()],
+        "nve" => vec![s.to_string(), "nue".into()],
+        _ => vec![s.to_string()],
+    }
+}
+
 fn first_letter(s: &str) -> char {
     s.chars().next().unwrap_or('?')
 }
@@ -109,5 +123,24 @@ mod tests {
         let v = fuzzy_variants("zang");
         assert!(v.contains(&"zang".into()));
         assert!(v.contains(&"zhang".into()));
+    }
+
+    #[test]
+    fn lue_and_lve_are_the_same() {
+        let v = fuzzy_variants("lve");
+        assert!(v.contains(&"lve".into()));
+        assert!(v.contains(&"lue".into()));
+        let u = fuzzy_variants("lue");
+        assert!(u.contains(&"lue".into()));
+        assert!(u.contains(&"lve".into()));
+        assert!(!fuzzy_variants("lu").contains(&"lv".into()));
+        assert!(!fuzzy_variants("lv").contains(&"lu".into()));
+    }
+
+    #[test]
+    fn nue_and_nve_are_the_same() {
+        assert!(fuzzy_variants("nve").contains(&"nue".into()));
+        assert!(fuzzy_variants("nue").contains(&"nve".into()));
+        assert!(!fuzzy_variants("nu").contains(&"nv".into()));
     }
 }

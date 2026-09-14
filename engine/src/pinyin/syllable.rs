@@ -116,7 +116,10 @@ mod tests {
         assert_eq!(longest_syllable_at("shurufa"), Some("shu"));
         assert_eq!(longest_syllable_at("a"), Some("a"));
         assert_eq!(longest_syllable_at("zhx"), None);
-        assert_eq!(longest_syllable_at("xian"), Some("xian"));
+        assert_eq!(longest_syllable_at("lue"), Some("lue"));
+        assert_eq!(longest_syllable_at("lve"), Some("lve"));
+        assert!(is_syllable("lue"));
+        assert!(is_syllable("lve"));
         assert_eq!(longest_syllable_at("diao"), Some("diao"));
         assert_ne!(longest_syllable_at("xian"), Some("xi"));
         assert_ne!(longest_syllable_at("diao"), Some("di"));

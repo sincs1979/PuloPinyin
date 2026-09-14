@@ -1837,6 +1837,18 @@ mod tests {
             query_words(&eng, "shengluehao").first().map(String::as_str),
             Some("\u{2026}")
         );
+        assert_eq!(
+            query_words(&eng, "shenglvehao").first().map(String::as_str),
+            Some("\u{2026}")
+        );
+        let lue = query_words(&eng, "lue");
+        assert!(
+            lue.contains(&"略".into()),
+            "lue must type 略 (lüe), got {lue:?}"
+        );
+        assert_ne!(lue.first().map(String::as_str), Some("路"));
+        let lve = query_words(&eng, "lve");
+        assert!(lve.contains(&"略".into()), "lve: {lve:?}");
     }
 
     #[test]
