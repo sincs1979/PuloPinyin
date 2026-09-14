@@ -141,6 +141,7 @@ cp -a "$STAGE" "$TAR_DIR/部落输入法-linux"
 # GNU tar: reproducible-ish, no macOS xattrs
 COPYFILE_DISABLE=1 tar -C "$TAR_DIR" -czf "${ROOT}/dist/${TAR_NAME}" 部落输入法-linux
 cp "${ROOT}/dist/${TAR_NAME}" "${ROOT}/${TAR_NAME}"
+cp "${ROOT}/dist/${TAR_NAME}" "${ROOT}/dist/buluo-ime-linux.tar.gz"
 
 echo "==> staging .deb"
 DEB_ROOT="${ROOT}/dist/linux-deb"

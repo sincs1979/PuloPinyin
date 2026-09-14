@@ -40,6 +40,7 @@ jobs:
             部落输入法-linux.deb
             部落输入法-linux.tar.gz
             dist/buluo-ime-linux.deb
+            dist/buluo-ime-linux.tar.gz
 
       - name: Publish rolling GitHub Release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -73,6 +74,5 @@ jobs:
             ```
           fail_on_unmatched_files: true
           files: |
-            部落输入法-linux.deb
-            部落输入法-linux.tar.gz
             dist/buluo-ime-linux.deb
+            dist/buluo-ime-linux.tar.gz
