@@ -208,4 +208,8 @@ public:
     }
 };
 
+#if defined(FCITX_ADDON_FACTORY_V2)
 FCITX_ADDON_FACTORY_V2(buluo, BuluoFactory);
+#else
+FCITX_ADDON_FACTORY(BuluoFactory);
+#endif
