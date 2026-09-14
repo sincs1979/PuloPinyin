@@ -60,10 +60,10 @@ fi
 
 if ! pkg-config --exists Fcitx5Core 2>/dev/null && ! pkg-config --exists fcitx5 2>/dev/null; then
   echo
-  echo "Fcitx5Core not found (need fcitx5-dev / fcitx5-devel)."
+  echo "Fcitx5Core not found (need libfcitx5core-dev / fcitx5-devel)."
   echo "Engine still works: cargo test -p engine"
   echo "Addon sources: linux/fcitx5/"
-  echo "Next: sudo apt install fcitx5 fcitx5-dev cmake pkg-config  # or dnf/pacman equivalent"
+  echo "Next: sudo apt install fcitx5 libfcitx5core-dev cmake pkg-config  # or dnf/pacman equivalent"
   echo "      ./scripts/install_linux.sh"
   echo "      fcitx5-configtool  # enable 部落输入法"
   exit 0

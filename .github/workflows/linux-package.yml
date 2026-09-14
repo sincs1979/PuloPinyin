@@ -23,8 +23,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            build-essential cmake pkg-config python3 \
-            fcitx5 fcitx5-dev extra-cmake-modules dpkg-dev
+            build-essential cmake pkg-config python3 extra-cmake-modules dpkg-dev \
+            fcitx5 libfcitx5core-dev
 
       - name: Build .deb and tar.gz
         run: |

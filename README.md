@@ -37,7 +37,7 @@ chmod +x scripts/install.sh
 **1. 装依赖 + Rust**
 
 ```bash
-sudo apt install fcitx5 fcitx5-dev cmake pkg-config build-essential git curl extra-cmake-modules python3
+sudo apt install fcitx5 libfcitx5core-dev cmake pkg-config build-essential git curl extra-cmake-modules python3
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 source "$HOME/.cargo/env"
 ```

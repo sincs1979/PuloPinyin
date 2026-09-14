@@ -27,7 +27,7 @@ need tar
 need dpkg-deb
 
 if ! pkg-config --exists Fcitx5Core 2>/dev/null; then
-  echo "Fcitx5Core.pc not found. Install fcitx5-dev / libfcitx5core-dev." >&2
+  echo "Fcitx5Core.pc not found. Install libfcitx5core-dev (Ubuntu) or fcitx5-dev (Debian)." >&2
   exit 1
 fi
 

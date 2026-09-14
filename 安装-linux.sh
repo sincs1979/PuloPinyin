@@ -30,7 +30,12 @@ install_apt_deps() {
   need_cmd g++ || pkgs+=(build-essential)
   need_cmd python3 || pkgs+=(python3)
   dpkg -s fcitx5 >/dev/null 2>&1 || pkgs+=(fcitx5)
-  dpkg -s fcitx5-dev >/dev/null 2>&1 || pkgs+=(fcitx5-dev)
+  if dpkg -s libfcitx5core-dev >/dev/null 2>&1 || dpkg -s fcitx5-dev >/dev/null 2>&1; then
+    :
+  else
+    # Ubuntu: libfcitx5core-dev；Debian 另有 fcitx5-dev 元包。
+    pkgs+=(libfcitx5core-dev)
+  fi
   dpkg -s extra-cmake-modules >/dev/null 2>&1 || pkgs+=(extra-cmake-modules)
   if ((${#pkgs[@]})); then
     echo "==> apt: ${pkgs[*]}"
