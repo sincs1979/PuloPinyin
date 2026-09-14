@@ -1,0 +1,78 @@
+name: linux-package
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.88.0
+
+      - name: Install fcitx5 build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake pkg-config python3 \
+            fcitx5 fcitx5-dev extra-cmake-modules dpkg-dev
+
+      - name: Build .deb and tar.gz
+        run: |
+          chmod +x scripts/package_linux.sh scripts/install_linux.sh
+          ./scripts/package_linux.sh
+          ls -lh 部落输入法-linux.deb 部落输入法-linux.tar.gz
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: buluo-ime-linux
+          path: |
+            部落输入法-linux.deb
+            部落输入法-linux.tar.gz
+            dist/buluo-ime-linux.deb
+
+      - name: Publish rolling GitHub Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: linux
+          name: Linux 安装包
+          make_latest: false
+          body: |
+            Ubuntu/Debian：
+
+            ```bash
+            sudo apt install fcitx5
+            sudo apt install ./部落输入法-linux.deb
+            fcitx5 -r
+            fcitx5-configtool   # 启用「部落输入法」
+            ```
+
+            任意发行版（解压到用户目录）：
+
+            ```bash
+            tar xf 部落输入法-linux.tar.gz
+            ./部落输入法-linux/install.sh
+            fcitx5 -r && fcitx5-configtool
+            ```
+
+            没有预编译包时，在 Linux 上一条命令从源码装：
+
+            ```bash
+            curl -fsSL https://raw.githubusercontent.com/sincs1979/PuloPinyin/main/安装-linux.sh | bash
+            ```
+          fail_on_unmatched_files: true
+          files: |
+            部落输入法-linux.deb
+            部落输入法-linux.tar.gz
+            dist/buluo-ime-linux.deb

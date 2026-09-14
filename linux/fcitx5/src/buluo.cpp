@@ -12,13 +12,18 @@
 
 #include "buluo_engine.h"
 
-#include <cstring>
+#include <cstdlib>
 #include <string>
+#include <unistd.h>
 
 class BuluoFcitxEngine : public fcitx::InputMethodEngineV2 {
 public:
     explicit BuluoFcitxEngine(fcitx::Instance *instance) : instance_(instance) {
-        engine_ = buluo_engine_new(nullptr, nullptr);
+        const auto dict = resolveDictPath();
+        const auto support = resolveSupportDir();
+        engine_ = buluo_engine_new(
+            dict.empty() ? nullptr : dict.c_str(),
+            support.empty() ? nullptr : support.c_str());
     }
 
     ~BuluoFcitxEngine() override {
@@ -160,6 +165,36 @@ private:
         }
         ic->updatePreedit();
         ic->updateUserInterface(fcitx::UserInterfaceComponent::InputPanel);
+    }
+
+    static std::string resolveSupportDir() {
+        if (const char *xdg = std::getenv("XDG_DATA_HOME")) {
+            return std::string(xdg) + "/buluo-ime";
+        }
+        if (const char *home = std::getenv("HOME")) {
+            return std::string(home) + "/.local/share/buluo-ime";
+        }
+        return {};
+    }
+
+    static std::string resolveDictPath() {
+        std::string candidates[5];
+        size_t n = 0;
+        const auto support = resolveSupportDir();
+        if (!support.empty()) {
+            candidates[n++] = support + "/system.dict";
+        }
+        if (const char *home = std::getenv("HOME")) {
+            candidates[n++] = std::string(home) + "/.local/share/fcitx5/buluo/system.dict";
+        }
+        candidates[n++] = "/usr/share/buluo-ime/system.dict";
+        candidates[n++] = "/usr/local/share/buluo-ime/system.dict";
+        for (size_t i = 0; i < n; ++i) {
+            if (access(candidates[i].c_str(), R_OK) == 0) {
+                return candidates[i];
+            }
+        }
+        return {};
     }
 
     fcitx::Instance *instance_;

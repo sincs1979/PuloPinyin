@@ -1,2 +1,4 @@
 *.pkg binary
 *.dmg binary
+*.deb binary
+*.tar.gz binary

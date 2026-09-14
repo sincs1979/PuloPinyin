@@ -38,6 +38,8 @@ pub fn default_system_dict() -> Option<std::path::PathBuf> {
         std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../resources/system.dict"),
     );
     candidates.push(default_support_dir().join("system.dict"));
+    candidates.push(std::path::PathBuf::from("/usr/share/buluo-ime/system.dict"));
+    candidates.push(std::path::PathBuf::from("/usr/local/share/buluo-ime/system.dict"));
     if let Ok(home) = std::env::var("HOME") {
         let home = std::path::PathBuf::from(home);
         candidates.push(
