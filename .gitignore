@@ -14,6 +14,10 @@ resources/system.dict
 /data/vendor/
 /data/system.tsv
 
+# ASCII aliases of the Windows installer (CI also writes the 部落输入法-windows.* names)
+/BuluoIME-windows.exe
+/BuluoIME-windows.zip
+
 /dist
 learned.db
 user.dict

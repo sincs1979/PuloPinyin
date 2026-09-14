@@ -1,0 +1,78 @@
+name: windows-ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.88.0
+          targets: x86_64-pc-windows-msvc
+
+      - name: Test engine on Windows MSVC
+        run: cargo test -p engine --target x86_64-pc-windows-msvc
+
+      - name: Test TSF IME crate
+        run: cargo test -p ime-win --target x86_64-pc-windows-msvc
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Build DLL and installer at repo root
+        shell: pwsh
+        run: .\windows\installer\build.ps1
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: buluo-ime-windows
+          path: |
+            部落输入法-windows.exe
+            部落输入法-windows.zip
+            BuluoIME-windows.exe
+            BuluoIME-windows.zip
+          if-no-files-found: error
+
+      - name: Publish rolling GitHub Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: windows
+          name: Windows 安装包
+          make_latest: false
+          body: |
+            下载后也可从仓库根目录取得同一文件：
+
+            https://github.com/sincs1979/PuloPinyin/raw/main/部落输入法-windows.exe
+
+            Windows 中文输入法必须走 TSF（`ITfTextInputProcessor`），不是普通 GUI。
+            **当前包是骨架**：引擎已在 `windows-latest` 测过，DLL 能装进 `Program Files\BuluoIME` 并写注册表，但还不能当输入法打字。
+            完整 TIP、候选窗、UTF-16 上屏、Authenticode 签名仍待做。
+
+            开发者不需要 Windows 电脑；安装包由 GitHub Actions 云主机编译。
+          files: |
+            部落输入法-windows.exe
+            部落输入法-windows.zip
+            BuluoIME-windows.exe
+            BuluoIME-windows.zip
+          fail_on_unmatched_files: false
+
+      - name: Commit installer to repo root
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: 部落输入法-windows.exe [skip ci]"
+          file_pattern: "部落输入法-windows.exe 部落输入法-windows.zip"
+          commit_user_name: github-actions[bot]
+          commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com

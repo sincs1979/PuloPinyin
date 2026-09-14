@@ -125,7 +125,7 @@ impl Engine {
             user: BinaryDict::default(),
             learned: None,
             user_stats: HashMap::new(),
-            user_dict_path: PathBuf::from("/tmp/pulopinyin-user.dict"),
+            user_dict_path: std::env::temp_dir().join("pulopinyin-user.dict"),
             composing: String::new(),
             phrase_buf: Vec::new(),
             ascii_mode: false,

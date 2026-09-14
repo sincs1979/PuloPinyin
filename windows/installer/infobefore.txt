@@ -1,0 +1,15 @@
+部落输入法 for Windows (TSF scaffold)
+
+This installer copies ime_win.dll and the lexicon, then writes
+InprocServer32 + CTF TIP registry keys.
+
+It is NOT a finished Chinese IME yet:
+  - ITfTextInputProcessor class factory is still a stub
+  - candidate HWND is not drawn
+  - UTF-16 commit into the focused app is not hooked
+
+Engine tests pass on GitHub Actions windows-latest.
+Developers do not need a Windows PC; only end users do.
+
+After a real TIP exists: Settings → Time & language → Typing
+→ add 部落输入法, then type zhongguo + Space.
