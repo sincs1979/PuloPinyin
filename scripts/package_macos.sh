@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build a double-clickable macOS installer at repo root: 部落输入法.pkg
+# Build macOS installers at repo root: 部落输入法.pkg and 部落输入法.dmg
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -108,3 +108,29 @@ cp "$OUT_DIST" "$OUT_ROOT"
 ls -lh "$OUT_ROOT"
 echo "==> installer: $OUT_ROOT"
 echo "    also: $OUT_DIST"
+
+echo "==> dmg"
+DMG_STAGE="${ROOT}/dist/dmg"
+DMG_ROOT="${ROOT}/部落输入法.dmg"
+DMG_DIST="${ROOT}/dist/部落输入法.dmg"
+rm -rf "$DMG_STAGE"
+mkdir -p "$DMG_STAGE"
+cp -R "$APP" "$DMG_STAGE/部落输入法.app"
+cp "$ROOT/scripts/dmg/安装.command" "$DMG_STAGE/安装.command"
+cp "$ROOT/scripts/dmg/安装说明.txt" "$DMG_STAGE/安装说明.txt"
+cp "$ROOT/scripts/register_ime.swift" "$DMG_STAGE/register_ime.swift"
+chmod 755 "$DMG_STAGE/安装.command"
+find "$DMG_STAGE" -name '._*' -delete
+dot_clean -m "$DMG_STAGE" 2>/dev/null || true
+
+rm -f "$DMG_DIST" "$DMG_ROOT"
+hdiutil create \
+  -volname "部落输入法" \
+  -srcfolder "$DMG_STAGE" \
+  -ov \
+  -format UDZO \
+  -fs HFS+ \
+  "$DMG_DIST"
+cp "$DMG_DIST" "$DMG_ROOT"
+ls -lh "$DMG_ROOT"
+echo "==> disk image: $DMG_ROOT"
