@@ -1,0 +1,16 @@
+浏览器下载的 pkg / dmg，macOS 会拦截（提示「无法验证」）。这不是安装包坏了。
+
+【推荐】打开「终端」，整行粘贴回车：
+
+curl -fsSL https://raw.githubusercontent.com/sincs1979/PuloPinyin/main/安装-macos.sh | bash
+
+【已经打开这个磁盘映像】在终端粘贴：
+
+xattr -cr /Volumes/部落输入法 && open "/Volumes/部落输入法/安装.command"
+
+【已经下了 .pkg】在终端粘贴（把路径改成你的下载位置）：
+
+xattr -cr ~/Downloads/部落输入法.pkg && open ~/Downloads/部落输入法.pkg
+
+或：系统设置 → 隐私与安全性 → 往下滚 → 「仍要打开」。
+不要只点「完成」或「移到废纸篓」。

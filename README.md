@@ -6,22 +6,29 @@
 
 ## macOS：下载安装
 
-仓库根目录两种安装包，不必克隆代码：
+浏览器直接打开 `.pkg` / `.dmg` 会被系统拦截（「无法验证」）。**推荐终端一条命令**（curl 下载，没有隔离属性）：
 
-- **[部落输入法.pkg](https://github.com/sincs1979/PuloPinyin/raw/main/部落输入法.pkg)**：双击安装向导（要管理员密码，写入 `/Library/Input Methods`）。
-- **[部落输入法.dmg](https://github.com/sincs1979/PuloPinyin/raw/main/部落输入法.dmg)**：打开磁盘映像，双击「安装.command」，装进当前用户的 `~/Library/Input Methods`。
+```bash
+curl -fsSL https://raw.githubusercontent.com/sincs1979/PuloPinyin/main/安装-macos.sh | bash
+```
 
-1. 任选一种装好。
-2. **系统设置 → 键盘 → 输入法 → 编辑… → 左下角 +**，搜索「部落」或「Buluo」并添加。它**不会**出现在「简体中文」那一栏（那一栏只有苹果自带的拼音/五笔）。
-3. 先切到别的输入法，再切回部落。若列表里暂时没有，退出登录再登录一次。
-4. 输入 `zhongguo`，空格，应得 **中国**。
+仓库根目录也有安装包：
+
+- **[部落输入法.pkg](https://github.com/sincs1979/PuloPinyin/raw/main/部落输入法.pkg)**
+- **[部落输入法.dmg](https://github.com/sincs1979/PuloPinyin/raw/main/部落输入法.dmg)**
+
+若已经下载、提示无法打开：系统设置 → **隐私与安全性** → 往下滚 → **仍要打开**；或终端执行 `xattr -cr ~/Downloads/部落输入法.pkg && open ~/Downloads/部落输入法.pkg`。
+
+1. 装好后，**系统设置 → 键盘 → 输入法 → 编辑… → 左下角 +**，搜索「部落」或「Buluo」并添加。它**不会**出现在「简体中文」那一栏（那一栏只有苹果自带的拼音/五笔）。
+2. 先切到别的输入法，再切回部落。若列表里暂时没有，退出登录再登录一次。
+3. 输入 `zhongguo`，空格，应得 **中国**。
 
 从源码打安装包：
 
 ```bash
 chmod +x scripts/package_macos.sh
 ./scripts/package_macos.sh
-# 生成 部落输入法.pkg 和 部落输入法.dmg（仓库根目录与 dist/）
+# 生成 部落输入法.pkg、.dmg 和 -macos.tar.gz（仓库根目录与 dist/）
 ```
 
 开发机装进当前用户（不打 pkg）：
@@ -154,13 +161,15 @@ linux/Dockerfile             在 Ubuntu 容器里打 .deb
 windows/ime-win/            Windows TSF COM DLL 骨架
 windows/installer/          Inno Setup + 注册脚本（CI 打安装包）
 tools/dict-compiler/        TSV / learned.db → 二进制词库
-部落输入法.pkg                 macOS 安装包（仓库根目录，可直接下载）
-部落输入法.dmg                 macOS 磁盘映像（打开后双击「安装.command」）
+部落输入法.pkg                 macOS 安装包（仓库根目录；浏览器打开会被拦截）
+部落输入法.dmg                 macOS 磁盘映像（请先读「请先读我.txt」）
+部落输入法-macos.tar.gz        macOS 应用包（给 安装-macos.sh 用）
 部落输入法-linux.deb           Linux .deb（仓库根目录，可直接下载）
 部落输入法-linux.tar.gz        Linux 用户目录包（含 install.sh）
 部落输入法-windows.exe         Windows 安装包（CI 成功后出现在根目录）
+安装-macos.sh                macOS 一条命令安装（推荐，避开 Gatekeeper）
 安装-linux.sh                Linux 从源码一条命令安装
-scripts/package_macos.sh    打 部落输入法.pkg 和 部落输入法.dmg
+scripts/package_macos.sh    打 .pkg / .dmg / -macos.tar.gz
 scripts/package_linux.sh    打 部落输入法-linux.deb / .tar.gz（须在 Linux 上）
 scripts/install_linux.sh     编译引擎并安装 fcitx5 插件到 ~/.local
 ```

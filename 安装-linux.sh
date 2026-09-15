@@ -12,8 +12,8 @@ CLONE_DIR="${BULUO_SRC:-$HOME/.local/src/PuloPinyin}"
 need_cmd() { command -v "$1" >/dev/null 2>&1; }
 
 if [[ "$(uname -s)" != "Linux" ]]; then
-  echo "这是 Linux 安装脚本。macOS 请下载仓库根目录的 部落输入法.pkg："
-  echo "  https://github.com/sincs1979/PuloPinyin/raw/main/部落输入法.pkg"
+  echo "这是 Linux 安装脚本。macOS 请用："
+  echo "  curl -fsSL https://raw.githubusercontent.com/sincs1979/PuloPinyin/main/安装-macos.sh | bash"
   exit 1
 fi
 

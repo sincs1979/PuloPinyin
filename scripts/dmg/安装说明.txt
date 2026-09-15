@@ -1,13 +1,14 @@
 部落输入法（macOS）
 
-打开这个磁盘映像后：
+不要双击浏览器下载栏里的文件。从 GitHub 直接下的 .pkg / .dmg / 安装.command 会被系统隔离。
 
-1. 双击「安装.command」（会拷进 ~/Library/Input Methods 并注册）。
-2. 系统设置 → 键盘 → 输入法 → 编辑… → 左下角 +
-3. 搜索「部落」或「Buluo」并添加。它不会出现在「简体中文」那一栏。
-4. 先切到别的输入法，再切回部落。
-5. 输入 zhongguo，空格，应得「中国」。
+推荐（终端一条命令，不会被隔离）：
 
-不要把应用拖进「应用程序」文件夹，输入法必须在「输入法」目录里。
+curl -fsSL https://raw.githubusercontent.com/sincs1979/PuloPinyin/main/安装-macos.sh | bash
 
-需要管理员安装、写入 /Library/Input Methods 时，请改用 部落输入法.pkg。
+若已经打开本磁盘映像，终端执行：
+
+xattr -cr /Volumes/部落输入法 && open "/Volumes/部落输入法/安装.command"
+
+装好后：系统设置 → 键盘 → 输入法 → 编辑… → 左下角 +，搜索「部落」或「Buluo」。
+不要把应用拖进「应用程序」文件夹。

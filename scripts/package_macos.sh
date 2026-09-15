@@ -118,8 +118,20 @@ mkdir -p "$DMG_STAGE"
 cp -R "$APP" "$DMG_STAGE/部落输入法.app"
 cp "$ROOT/scripts/dmg/安装.command" "$DMG_STAGE/安装.command"
 cp "$ROOT/scripts/dmg/安装说明.txt" "$DMG_STAGE/安装说明.txt"
+cp "$ROOT/scripts/dmg/请先读我.txt" "$DMG_STAGE/请先读我.txt"
+cp "$ROOT/scripts/install_macos_payload.sh" "$DMG_STAGE/install_macos_payload.sh"
 cp "$ROOT/scripts/register_ime.swift" "$DMG_STAGE/register_ime.swift"
-chmod 755 "$DMG_STAGE/安装.command"
+chmod 755 "$DMG_STAGE/安装.command" "$DMG_STAGE/install_macos_payload.sh"
+if command -v osacompile >/dev/null; then
+  osacompile -o "$DMG_STAGE/安装.app" "$ROOT/scripts/dmg/install.applescript"
+  IDENTITY="${CODE_SIGN_IDENTITY:-Apple Development: sincs1979@gmail.com (D2D7VZWQ3L)}"
+  if ! security find-identity -v -p codesigning | grep -F -q "$IDENTITY"; then
+    IDENTITY="$(security find-identity -v -p codesigning | awk -F'"' '/Apple Development|Developer ID Application/{print $2; exit}')"
+  fi
+  if [[ -n "$IDENTITY" ]]; then
+    codesign --force --sign "$IDENTITY" --identifier com.buluo.inputmethod.pinyin.installer "$DMG_STAGE/安装.app" || true
+  fi
+fi
 find "$DMG_STAGE" -name '._*' -delete
 dot_clean -m "$DMG_STAGE" 2>/dev/null || true
 
@@ -134,3 +146,17 @@ hdiutil create \
 cp "$DMG_DIST" "$DMG_ROOT"
 ls -lh "$DMG_ROOT"
 echo "==> disk image: $DMG_ROOT"
+
+echo "==> macos tarball (curl 安装，无隔离属性)"
+TAR_NAME="部落输入法-macos.tar.gz"
+TAR_DIR="${ROOT}/dist/macos-tardir"
+rm -rf "$TAR_DIR"
+mkdir -p "$TAR_DIR"
+cp -R "$APP" "$TAR_DIR/部落输入法.app"
+cp "$ROOT/scripts/install_macos_payload.sh" "$TAR_DIR/install_macos_payload.sh"
+cp "$ROOT/scripts/register_ime.swift" "$TAR_DIR/register_ime.swift"
+chmod 755 "$TAR_DIR/install_macos_payload.sh"
+COPYFILE_DISABLE=1 tar -C "$TAR_DIR" -czf "${ROOT}/dist/${TAR_NAME}" 部落输入法.app install_macos_payload.sh register_ime.swift
+cp "${ROOT}/dist/${TAR_NAME}" "${ROOT}/${TAR_NAME}"
+ls -lh "${ROOT}/${TAR_NAME}"
+echo "==> tarball: ${ROOT}/${TAR_NAME}"
