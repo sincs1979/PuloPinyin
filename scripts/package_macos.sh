@@ -158,5 +158,7 @@ cp "$ROOT/scripts/register_ime.swift" "$TAR_DIR/register_ime.swift"
 chmod 755 "$TAR_DIR/install_macos_payload.sh"
 COPYFILE_DISABLE=1 tar -C "$TAR_DIR" -czf "${ROOT}/dist/${TAR_NAME}" 部落输入法.app install_macos_payload.sh register_ime.swift
 cp "${ROOT}/dist/${TAR_NAME}" "${ROOT}/${TAR_NAME}"
-ls -lh "${ROOT}/${TAR_NAME}"
+cp "${ROOT}/dist/${TAR_NAME}" "${ROOT}/buluo-ime-macos.tar.gz"
+ls -lh "${ROOT}/${TAR_NAME}" "${ROOT}/buluo-ime-macos.tar.gz"
 echo "==> tarball: ${ROOT}/${TAR_NAME}"
+echo "    ascii: ${ROOT}/buluo-ime-macos.tar.gz"

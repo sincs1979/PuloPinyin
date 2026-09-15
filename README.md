@@ -163,7 +163,8 @@ windows/installer/          Inno Setup + 注册脚本（CI 打安装包）
 tools/dict-compiler/        TSV / learned.db → 二进制词库
 部落输入法.pkg                 macOS 安装包（仓库根目录；浏览器打开会被拦截）
 部落输入法.dmg                 macOS 磁盘映像（请先读「请先读我.txt」）
-部落输入法-macos.tar.gz        macOS 应用包（给 安装-macos.sh 用）
+部落输入法-macos.tar.gz        macOS 应用包（中文名）
+buluo-ime-macos.tar.gz       同上 ASCII 名（安装脚本用，避免 HTTP/2 中文名断流）
 部落输入法-linux.deb           Linux .deb（仓库根目录，可直接下载）
 部落输入法-linux.tar.gz        Linux 用户目录包（含 install.sh）
 部落输入法-windows.exe         Windows 安装包（CI 成功后出现在根目录）

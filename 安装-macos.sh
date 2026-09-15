@@ -12,7 +12,28 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
   exit 1
 fi
 
-TARBALL_URL="${BULUO_MACOS_TARBALL:-https://github.com/sincs1979/PuloPinyin/raw/main/部落输入法-macos.tar.gz}"
+TARBALL_URLS=(
+  "${BULUO_MACOS_TARBALL:-}"
+  "https://raw.githubusercontent.com/sincs1979/PuloPinyin/main/buluo-ime-macos.tar.gz"
+  "https://raw.githubusercontent.com/sincs1979/PuloPinyin/main/%E9%83%A8%E8%90%BD%E8%BE%93%E5%85%A5%E6%B3%95-macos.tar.gz"
+)
+
+download_tarball() {
+  local dest="$1"
+  local url
+  for url in "${TARBALL_URLS[@]}"; do
+    [[ -z "$url" ]] && continue
+    echo "==> 下载 $url"
+    if curl --http1.1 --fail --location --retry 5 --retry-all-errors --retry-delay 1 \
+      --connect-timeout 20 --max-time 300 \
+      -o "$dest" "$url"; then
+      return 0
+    fi
+    echo "    失败，试下一个地址…" >&2
+  done
+  echo "下载安装包失败。请检查网络后重试。" >&2
+  return 1
+}
 SRC="${BASH_SOURCE[0]:-}"
 HERE=""
 if [[ -n "$SRC" && "$SRC" != "bash" && -f "$SRC" ]]; then
@@ -38,10 +59,10 @@ trap cleanup EXIT
 
 if [[ -z "$APP" ]]; then
   TMP="$(mktemp -d /tmp/buluo-ime.XXXXXX)"
-  echo "==> 下载 $TARBALL_URL"
-  curl -fsSL --retry 3 -o "$TMP/部落输入法-macos.tar.gz" "$TARBALL_URL"
-  xattr -cr "$TMP/部落输入法-macos.tar.gz" 2>/dev/null || true
-  tar -xzf "$TMP/部落输入法-macos.tar.gz" -C "$TMP"
+  echo "==> 下载安装包"
+  download_tarball "$TMP/buluo-ime-macos.tar.gz"
+  xattr -cr "$TMP/buluo-ime-macos.tar.gz" 2>/dev/null || true
+  tar -xzf "$TMP/buluo-ime-macos.tar.gz" -C "$TMP"
   if [[ -d "$TMP/部落输入法.app" ]]; then
     APP="$TMP/部落输入法.app"
   elif [[ -d "$TMP/BuluoIME.app" ]]; then
