@@ -4,7 +4,10 @@ use crate::candidate::{Candidate, CandidateList};
 use crate::dictionary::binary::learned_syllables;
 use crate::dictionary::{load_system_dict, load_user_dict, BinaryDict, DictEntry};
 use crate::learning::{compile_user_dict, should_compile, LearnedDb};
-use crate::pinyin::parser::{full_cut_queries, is_separator, normalize_query, preedit_marked};
+use crate::pinyin::parser::{
+    full_cut_queries, is_full_syllable_run, is_separator, normalize_query, preedit_marked,
+    skip_separators,
+};
 use crate::pinyin::{match_consumed, matches_prefix};
 use crate::punct::{self, QuoteState};
 use crate::ranking::score::{now_unix, score, ScoreInputs};
@@ -85,6 +88,12 @@ pub struct Engine {
     candidates: CandidateList,
     /// Consecutive ASCII letters committed in this session (`ChatGPT`).
     ascii_buf: String,
+    /// Last uncomposed key was a digit (`3.14` / `1,000` keep ASCII `.` `,`).
+    after_ascii_digit: bool,
+    /// Just committed English letters in Chinese mode (`OK.` keeps ASCII punct).
+    after_ascii_letter: bool,
+    /// `.` paged while composing; next English letter → `taobao.com` style.
+    dot_paged_for_url: bool,
 }
 
 impl Engine {
@@ -114,6 +123,9 @@ impl Engine {
             quotes: QuoteState::default(),
             candidates: CandidateList::default(),
             ascii_buf: String::new(),
+            after_ascii_digit: false,
+            after_ascii_letter: false,
+            dot_paged_for_url: false,
         })
     }
 
@@ -132,6 +144,9 @@ impl Engine {
             quotes: QuoteState::default(),
             candidates: CandidateList::default(),
             ascii_buf: String::new(),
+            after_ascii_digit: false,
+            after_ascii_letter: false,
+            dot_paged_for_url: false,
         }
     }
 
@@ -145,7 +160,11 @@ impl Engine {
 
     pub fn set_ascii_mode(&mut self, ascii: bool) {
         if self.ascii_mode != ascii {
+            let keep_ascii_punct = !ascii && !self.ascii_buf.is_empty();
             self.flush_ascii_learn();
+            if keep_ascii_punct {
+                self.after_ascii_letter = true;
+            }
         }
         self.ascii_mode = ascii;
     }
@@ -185,6 +204,7 @@ impl Engine {
         if matches!(key, KeyEvent::ToggleAscii) {
             if self.composing.is_empty() {
                 self.flush_ascii_learn();
+                self.after_ascii_digit = false;
                 self.ascii_mode = !self.ascii_mode;
                 return SessionOutput {
                     consumed: true,
@@ -205,19 +225,34 @@ impl Engine {
         let candidates_active = !self.candidates.is_empty();
 
         match key {
-            KeyEvent::Char(c) if self.chinese_ascii_letter(c) => self.commit_ascii_letter(c),
+            KeyEvent::Char(c) if self.chinese_ascii_letter(c) => {
+                self.after_ascii_digit = false;
+                self.dot_paged_for_url = false;
+                self.commit_ascii_letter(c)
+            }
             KeyEvent::Char(c) if c.is_ascii_alphabetic() => {
+                self.after_ascii_digit = false;
+                self.after_ascii_letter = false;
+                if self.dot_paged_for_url && !self.composing.is_empty() {
+                    return self.commit_url_after_dot_page(c);
+                }
+                self.dot_paged_for_url = false;
                 self.composing.push(c.to_ascii_lowercase());
                 self.refresh_query();
                 self.output(None)
             }
             KeyEvent::Separator => {
+                self.after_ascii_digit = false;
+                self.dot_paged_for_url = false;
                 if self.composing.is_empty() {
                     self.flush_ascii_learn();
                 }
                 self.insert_separator()
             }
             KeyEvent::Backspace => {
+                self.after_ascii_digit = false;
+                self.after_ascii_letter = false;
+                self.dot_paged_for_url = false;
                 if self.composing.is_empty() {
                     self.ascii_buf.pop();
                     return SessionOutput::pass_through(false);
@@ -232,6 +267,9 @@ impl Engine {
                 self.output(None)
             }
             KeyEvent::Escape => {
+                self.after_ascii_digit = false;
+                self.after_ascii_letter = false;
+                self.dot_paged_for_url = false;
                 self.ascii_buf.clear();
                 if self.composing.is_empty() {
                     return SessionOutput::pass_through(false);
@@ -240,18 +278,29 @@ impl Engine {
                 self.output(None)
             }
             KeyEvent::Space => {
+                self.after_ascii_digit = false;
+                self.dot_paged_for_url = false;
                 self.flush_ascii_learn();
                 if self.composing.is_empty() {
+                    self.after_ascii_letter = false;
                     return SessionOutput::pass_through(false);
                 }
                 self.select_index(0)
             }
             KeyEvent::Enter => {
+                self.after_ascii_digit = false;
+                self.dot_paged_for_url = false;
                 self.flush_ascii_learn();
                 if self.composing.is_empty() {
                     return SessionOutput::pass_through(false);
                 }
                 let raw = self.composing.clone();
+                if looks_like_english(&raw) {
+                    self.after_ascii_letter = true;
+                    self.ascii_buf.push_str(&raw);
+                } else {
+                    self.after_ascii_letter = false;
+                }
                 self.clear_composing();
                 SessionOutput {
                     consumed: true,
@@ -266,15 +315,25 @@ impl Engine {
             KeyEvent::Digit(d) => {
                 if !candidates_active {
                     self.flush_ascii_learn();
+                    self.after_ascii_letter = false;
+                    self.dot_paged_for_url = false;
+                    self.after_ascii_digit = true;
                     return SessionOutput::pass_through(false);
                 }
+                self.after_ascii_digit = false;
+                self.dot_paged_for_url = false;
                 if let Some(idx) = digit_to_page_index(d) {
                     self.select_index(idx)
                 } else {
+                    self.after_ascii_letter = false;
                     SessionOutput::pass_through(false)
                 }
             }
             KeyEvent::PageNext => {
+                self.after_ascii_digit = false;
+                self.after_ascii_letter = false;
+                // `=` / `+` paging is not a URL hint (only `.` sets the flag).
+                self.dot_paged_for_url = false;
                 if !candidates_active {
                     return SessionOutput::pass_through(false);
                 }
@@ -282,6 +341,9 @@ impl Engine {
                 self.output(None)
             }
             KeyEvent::PagePrev => {
+                self.after_ascii_digit = false;
+                self.after_ascii_letter = false;
+                self.dot_paged_for_url = false;
                 if !candidates_active {
                     return SessionOutput::pass_through(false);
                 }
@@ -289,21 +351,38 @@ impl Engine {
                 self.output(None)
             }
             KeyEvent::Punct(c) if is_separator(c) => {
+                self.dot_paged_for_url = false;
                 if self.composing.is_empty() {
                     self.flush_ascii_learn();
                 }
                 self.insert_separator()
             }
             KeyEvent::Punct(c) => {
+                // `:` `/` `@` commit raw letters for `https://` / email.
+                if !self.composing.is_empty()
+                    && is_url_path_punct(c)
+                    && !symbols::is_catalog_key(&normalize_query(&self.composing))
+                {
+                    self.dot_paged_for_url = false;
+                    return self.commit_raw_ascii_punct(c);
+                }
                 if candidates_active && is_page_prev(c) {
+                    self.dot_paged_for_url = false;
                     self.candidates.prev_page();
                     return self.output(None);
                 }
                 if candidates_active && is_page_next(c) {
+                    // `.` pages; a following letter becomes `host.com`.
+                    self.dot_paged_for_url =
+                        matches!(c, '.' | '。') && !self.composing.is_empty();
                     self.candidates.next_page();
                     return self.output(None);
                 }
-                self.flush_ascii_learn();
+                self.dot_paged_for_url = false;
+                // Keep ascii_buf across `taobao` + Enter + `.` + `com`.
+                if !(self.after_ascii_letter && self.composing.is_empty()) {
+                    self.flush_ascii_learn();
+                }
                 self.commit_punct(c)
             }
             KeyEvent::ToggleAscii => SessionOutput::pass_through(false),
@@ -324,6 +403,7 @@ impl Engine {
         match key {
             KeyEvent::Char(c) if c.is_ascii_alphabetic() => {
                 self.ascii_buf.push(c);
+                self.after_ascii_letter = true;
                 commit_char(c)
             }
             KeyEvent::Char(c) | KeyEvent::Punct(c) => {
@@ -383,12 +463,14 @@ impl Engine {
                 }
                 if self.composing.is_empty() {
                     self.ascii_buf.push(c);
+                    self.after_ascii_letter = true;
                 }
                 return out;
             }
             self.clear_composing();
         }
         self.ascii_buf.push(c);
+        self.after_ascii_letter = true;
         SessionOutput {
             consumed: true,
             commit: Some(letter),
@@ -409,6 +491,7 @@ impl Engine {
         } else {
             self.ascii_buf.clear();
         }
+        self.after_ascii_letter = false;
     }
 
     fn learn_ascii_word(&mut self, word: &str) {
@@ -426,8 +509,69 @@ impl Engine {
         self.learn(&cand);
     }
 
+    /// Commit composing letters as-is plus ASCII punct (`taobao.` → `taobao.`).
+    /// Keeps `ascii_buf` so the next letters (`com`) stay English.
+    fn commit_raw_ascii_punct(&mut self, ch: char) -> SessionOutput {
+        let mark = punct::to_ascii(ch);
+        let mut raw = std::mem::take(&mut self.composing);
+        self.phrase_buf.clear();
+        self.candidates = CandidateList::default();
+        self.after_ascii_digit = false;
+        self.after_ascii_letter = true;
+        self.dot_paged_for_url = false;
+        // Continue the ASCII run so `taobao.` + `com` does not re-enter pinyin.
+        self.ascii_buf.push_str(&raw);
+        raw.push_str(&mark);
+        SessionOutput {
+            consumed: true,
+            commit: Some(raw),
+            marked: String::new(),
+            candidates: Vec::new(),
+            page: 0,
+            page_count: 0,
+            ascii_mode: self.ascii_mode,
+        }
+    }
+
+    /// After `.` paged candidates, a letter means URL: commit `host.` + letter.
+    fn commit_url_after_dot_page(&mut self, letter: char) -> SessionOutput {
+        let letter = letter.to_ascii_lowercase();
+        let mut raw = std::mem::take(&mut self.composing);
+        self.phrase_buf.clear();
+        self.candidates = CandidateList::default();
+        self.dot_paged_for_url = false;
+        self.after_ascii_digit = false;
+        self.after_ascii_letter = true;
+        self.ascii_buf.push_str(&raw);
+        self.ascii_buf.push(letter);
+        raw.push('.');
+        raw.push(letter);
+        SessionOutput {
+            consumed: true,
+            commit: Some(raw),
+            marked: String::new(),
+            candidates: Vec::new(),
+            page: 0,
+            page_count: 0,
+            ascii_mode: self.ascii_mode,
+        }
+    }
+
     fn commit_punct(&mut self, ch: char) -> SessionOutput {
-        let mark = punct::to_chinese(ch, &mut self.quotes);
+        let after_english = self.after_ascii_letter && self.composing.is_empty();
+        let after_digit = self.after_ascii_digit && self.composing.is_empty();
+        self.after_ascii_digit = false;
+        let mark = if after_english {
+            punct::to_ascii(ch)
+        } else if after_digit && matches!(ch, '.' | ',' | '。' | '，') {
+            if matches!(ch, '.' | '。') {
+                ".".into()
+            } else {
+                ",".into()
+            }
+        } else {
+            punct::to_chinese(ch, &mut self.quotes)
+        };
         if self.composing.is_empty() {
             return SessionOutput {
                 consumed: true,
@@ -470,6 +614,7 @@ impl Engine {
         self.composing.clear();
         self.phrase_buf.clear();
         self.candidates = CandidateList::default();
+        self.dot_paged_for_url = false;
     }
 
     fn select_index(&mut self, page_index: usize) -> SessionOutput {
@@ -493,6 +638,12 @@ impl Engine {
         if leftover.is_empty() {
             self.learn_phrase_combo();
             let text = cand.word.clone();
+            if looks_like_english(&text) {
+                self.after_ascii_letter = true;
+                self.ascii_buf.push_str(&text);
+            } else {
+                self.after_ascii_letter = false;
+            }
             self.clear_composing();
             SessionOutput {
                 consumed: true,
@@ -504,6 +655,7 @@ impl Engine {
                 ascii_mode: self.ascii_mode,
             }
         } else {
+            self.after_ascii_letter = false;
             self.composing = leftover;
             self.refresh_query();
             self.output(Some(cand.word))
@@ -703,6 +855,10 @@ impl Engine {
         items.sort_by(|a, b| {
             b.complete
                 .cmp(&a.complete)
+                .then_with(|| {
+                    remaining_is_syllable_run(&input, b.consumed)
+                        .cmp(&remaining_is_syllable_run(&input, a.consumed))
+                })
                 .then_with(|| b.consumed.cmp(&a.consumed))
                 .then_with(|| {
                     b.score
@@ -818,6 +974,30 @@ impl Engine {
         }
         best
     }
+}
+
+fn remaining_is_syllable_run(input: &str, consumed: usize) -> bool {
+    if consumed > input.len() || !input.is_char_boundary(consumed) {
+        return false;
+    }
+    is_full_syllable_run(skip_separators(&input[consumed..]))
+}
+
+fn looks_like_english(s: &str) -> bool {
+    let mut has_letter = false;
+    for c in s.chars() {
+        if c.is_ascii_alphabetic() {
+            has_letter = true;
+        } else if !(c.is_ascii_digit() || matches!(c, '\'' | '-' | '_')) {
+            return false;
+        }
+    }
+    has_letter
+}
+
+/// Path / scheme punct while composing (`https:` / `a@b`); `.` stays for paging.
+fn is_url_path_punct(c: char) -> bool {
+    matches!(c, '/' | ':' | '@')
 }
 
 fn skip_leading_sep(s: &str) -> &str {
@@ -982,6 +1162,236 @@ mod tests {
         assert_eq!(
             eng.handle_key(KeyEvent::Punct('?')).commit.as_deref(),
             Some("？")
+        );
+    }
+
+    #[test]
+    fn period_and_comma_after_digit_stay_ascii() {
+        let mut eng = test_engine();
+        let out = eng.handle_key(KeyEvent::Digit(3));
+        assert!(!out.consumed);
+        assert!(out.commit.is_none());
+        assert_eq!(
+            eng.handle_key(KeyEvent::Punct('.')).commit.as_deref(),
+            Some(".")
+        );
+        let out = eng.handle_key(KeyEvent::Digit(1));
+        assert!(!out.consumed);
+        assert_eq!(
+            eng.handle_key(KeyEvent::Punct(',')).commit.as_deref(),
+            Some(",")
+        );
+        assert_eq!(
+            eng.handle_key(KeyEvent::Punct('.')).commit.as_deref(),
+            Some("。"),
+            "without a preceding digit, period is still 。"
+        );
+        let _ = eng.handle_key(KeyEvent::Digit(2));
+        assert_eq!(
+            eng.handle_key(KeyEvent::Punct('，')).commit.as_deref(),
+            Some(",")
+        );
+        let _ = eng.handle_key(KeyEvent::Digit(5));
+        assert_eq!(
+            eng.handle_key(KeyEvent::Punct('。')).commit.as_deref(),
+            Some(".")
+        );
+        assert_eq!(
+            eng.handle_key(KeyEvent::Punct('?')).commit.as_deref(),
+            Some("？")
+        );
+    }
+
+    #[test]
+    fn letter_clears_digit_ascii_punct() {
+        let mut eng = test_engine();
+        let _ = eng.handle_key(KeyEvent::Digit(8));
+        type_pinyin(&mut eng, "ni");
+        eng.clear_composing();
+        assert_eq!(
+            eng.handle_key(KeyEvent::Punct('.')).commit.as_deref(),
+            Some("。")
+        );
+    }
+
+    #[test]
+    fn punct_after_english_letter_stays_ascii() {
+        let mut eng = test_engine();
+        assert_eq!(
+            eng.handle_key(KeyEvent::Char('A')).commit.as_deref(),
+            Some("A")
+        );
+        assert_eq!(
+            eng.handle_key(KeyEvent::Punct('.')).commit.as_deref(),
+            Some(".")
+        );
+        assert_eq!(
+            eng.handle_key(KeyEvent::Punct(',')).commit.as_deref(),
+            Some(",")
+        );
+        assert_eq!(
+            eng.handle_key(KeyEvent::Punct('?')).commit.as_deref(),
+            Some("?")
+        );
+        assert_eq!(
+            eng.handle_key(KeyEvent::Punct('!')).commit.as_deref(),
+            Some("!")
+        );
+        let out = eng.handle_key(KeyEvent::Space);
+        assert!(!out.consumed);
+        assert_eq!(
+            eng.handle_key(KeyEvent::Punct('.')).commit.as_deref(),
+            Some("。"),
+            "space ends the English run"
+        );
+    }
+
+    #[test]
+    fn dot_pages_while_composing_not_url() {
+        let mut eng = test_engine();
+        type_pinyin(&mut eng, "taobao");
+        assert!(!eng.candidates().is_empty());
+        assert!(eng.candidates().page_count() >= 1);
+        let page_before = eng.candidates().page;
+        let out = eng.handle_key(KeyEvent::Punct('.'));
+        assert!(out.commit.is_none(), "dot must page, not commit: {out:?}");
+        assert_eq!(eng.composing(), "taobao");
+        if eng.candidates().page_count() > 1 {
+            assert_ne!(eng.candidates().page, page_before);
+        }
+    }
+
+    #[test]
+    fn dot_page_then_letter_commits_domain() {
+        let mut eng = test_engine();
+        type_pinyin(&mut eng, "taobao");
+        let out = eng.handle_key(KeyEvent::Punct('.'));
+        assert!(out.commit.is_none(), "first dot pages: {out:?}");
+        assert_eq!(eng.composing(), "taobao");
+        let out = eng.handle_key(KeyEvent::Char('c'));
+        assert_eq!(out.commit.as_deref(), Some("taobao.c"));
+        assert!(eng.composing().is_empty());
+        assert_eq!(
+            eng.handle_key(KeyEvent::Char('o')).commit.as_deref(),
+            Some("o")
+        );
+        assert_eq!(
+            eng.handle_key(KeyEvent::Char('m')).commit.as_deref(),
+            Some("m")
+        );
+    }
+
+    #[test]
+    fn equals_page_then_letter_stays_pinyin() {
+        let mut eng = test_engine();
+        type_pinyin(&mut eng, "taobao");
+        let _ = eng.handle_key(KeyEvent::PageNext);
+        let out = eng.handle_key(KeyEvent::Char('c'));
+        assert!(out.commit.is_none());
+        assert_eq!(eng.composing(), "taobaoc");
+    }
+
+    #[test]
+    fn enter_then_dot_makes_domain() {
+        let mut eng = test_engine();
+        type_pinyin(&mut eng, "taobao");
+        let out = eng.handle_key(KeyEvent::Enter);
+        assert_eq!(out.commit.as_deref(), Some("taobao"));
+        assert_eq!(
+            eng.handle_key(KeyEvent::Punct('.')).commit.as_deref(),
+            Some(".")
+        );
+        assert_eq!(
+            eng.handle_key(KeyEvent::Char('c')).commit.as_deref(),
+            Some("c")
+        );
+        assert_eq!(
+            eng.handle_key(KeyEvent::Char('o')).commit.as_deref(),
+            Some("o")
+        );
+        assert_eq!(
+            eng.handle_key(KeyEvent::Char('m')).commit.as_deref(),
+            Some("m")
+        );
+    }
+
+    #[test]
+    fn url_slash_and_colon_while_composing() {
+        let mut eng = test_engine();
+        type_pinyin(&mut eng, "https");
+        let out = eng.handle_key(KeyEvent::Punct(':'));
+        assert_eq!(out.commit.as_deref(), Some("https:"));
+        assert_eq!(
+            eng.handle_key(KeyEvent::Punct('/')).commit.as_deref(),
+            Some("/")
+        );
+        assert_eq!(
+            eng.handle_key(KeyEvent::Punct('/')).commit.as_deref(),
+            Some("/")
+        );
+    }
+
+    #[test]
+    fn enter_raw_letters_then_ascii_punct() {
+        let mut eng = test_engine();
+        type_pinyin(&mut eng, "ok");
+        let out = eng.handle_key(KeyEvent::Enter);
+        assert_eq!(out.commit.as_deref(), Some("ok"));
+        assert!(eng.composing().is_empty());
+        assert_eq!(
+            eng.handle_key(KeyEvent::Punct('.')).commit.as_deref(),
+            Some(".")
+        );
+        eng.end_ascii_run();
+        type_pinyin(&mut eng, "hello");
+        let out = eng.handle_key(KeyEvent::Enter);
+        assert_eq!(out.commit.as_deref(), Some("hello"));
+        assert_eq!(
+            eng.handle_key(KeyEvent::Punct(',')).commit.as_deref(),
+            Some(",")
+        );
+        assert_eq!(
+            eng.handle_key(KeyEvent::Punct('?')).commit.as_deref(),
+            Some("?")
+        );
+    }
+
+    #[test]
+    fn ascii_mode_english_then_chinese_mode_ascii_punct() {
+        let mut eng = test_engine();
+        eng.set_ascii_mode(true);
+        for c in "OK".chars() {
+            assert_eq!(
+                eng.handle_key(KeyEvent::Char(c)).commit.as_deref(),
+                Some(c.to_string().as_str())
+            );
+        }
+        eng.set_ascii_mode(false);
+        assert!(!eng.ascii_mode());
+        assert_eq!(
+            eng.handle_key(KeyEvent::Punct('.')).commit.as_deref(),
+            Some(".")
+        );
+        assert_eq!(
+            eng.handle_key(KeyEvent::Punct('!')).commit.as_deref(),
+            Some("!")
+        );
+    }
+
+    #[test]
+    fn select_english_candidate_then_ascii_punct() {
+        let mut eng = test_engine();
+        let _ = eng.handle_key(KeyEvent::Char('C'));
+        for c in "hatGPT".chars() {
+            let _ = eng.handle_key(KeyEvent::Char(c));
+        }
+        let _ = eng.handle_key(KeyEvent::Enter);
+        type_pinyin(&mut eng, "chatgpt");
+        let out = select_word(&mut eng, "ChatGPT");
+        assert_eq!(out.commit.as_deref(), Some("ChatGPT"));
+        assert_eq!(
+            eng.handle_key(KeyEvent::Punct('.')).commit.as_deref(),
+            Some(".")
         );
     }
 
@@ -1453,7 +1863,7 @@ mod tests {
     }
 
     #[test]
-    fn query_xian_prefers_xian_syllable_not_xian() {
+    fn query_xian_lists_xian_city_after_xian_syllable() {
         let eng = test_engine();
         let words = eng
             .query("xian")
@@ -1468,8 +1878,13 @@ mod tests {
         let first = words.first().map(String::as_str).unwrap_or("");
         assert_ne!(first, "西安", "xian must not prefer 西安: {words:?}");
         assert!(
-            !words.contains(&"西安".into()),
-            "xian must not match 西安 without a separator: {words:?}"
+            words.contains(&"西安".into()),
+            "xian must list 西安: {words:?}"
+        );
+        let pos = words.iter().position(|w| w == "西安").unwrap();
+        assert!(
+            pos < 10,
+            "西安 should be on the first page, got {pos}: {words:?}"
         );
         let xian = eng
             .query("xi'an")
@@ -1478,6 +1893,148 @@ mod tests {
             .map(|c| c.word.clone())
             .collect::<Vec<_>>();
         assert!(xian.contains(&"西安".into()), "xi'an candidates: {xian:?}");
+    }
+
+    #[test]
+    fn query_ba_does_not_pin_baoan() {
+        let eng = Engine::in_memory(vec![
+            DictEntry {
+                word: "把".into(),
+                syllables: vec!["ba".into()],
+                frequency: 3_000_000,
+            },
+            DictEntry {
+                word: "吧".into(),
+                syllables: vec!["ba".into()],
+                frequency: 2_000_000,
+            },
+            DictEntry {
+                word: "八".into(),
+                syllables: vec!["ba".into()],
+                frequency: 700_000,
+            },
+            DictEntry {
+                word: "保安".into(),
+                syllables: vec!["bao".into(), "an".into()],
+                frequency: 214_000,
+            },
+        ]);
+        let words = query_words(&eng, "ba");
+        assert_eq!(words.first().map(String::as_str), Some("把"), "{words:?}");
+        assert_ne!(
+            words.get(1).map(String::as_str),
+            Some("保安"),
+            "ba must not pin 保安 at slot 2: {words:?}"
+        );
+        assert!(
+            !words.contains(&"保安".into())
+                || words.iter().position(|w| w == "保安").unwrap() > 2,
+            "保安 must not outrank 把/吧 on ba: {words:?}"
+        );
+    }
+
+    #[test]
+    fn leftover_split_yields_to_user_count() {
+        let mut eng = Engine::in_memory(vec![
+            DictEntry {
+                word: "先".into(),
+                syllables: vec!["xian".into()],
+                frequency: 200_000,
+            },
+            DictEntry {
+                word: "显".into(),
+                syllables: vec!["xian".into()],
+                frequency: 50_000,
+            },
+            DictEntry {
+                word: "西安".into(),
+                syllables: vec!["xi".into(), "an".into()],
+                frequency: 70_000,
+            },
+        ]);
+        let before = query_words(&eng, "xian");
+        assert!(before.contains(&"西安".into()), "{before:?}");
+        assert_ne!(before.first().map(String::as_str), Some("西安"));
+        for _ in 0..12 {
+            let cand = eng
+                .query("xian")
+                .items
+                .into_iter()
+                .find(|c| c.word == "显")
+                .unwrap();
+            eng.learn(&cand);
+        }
+        let after = query_words(&eng, "xian");
+        assert_eq!(
+            after.first().map(String::as_str),
+            Some("显"),
+            "user_count must be able to move rank: {after:?}"
+        );
+        assert_ne!(
+            after.get(1).map(String::as_str),
+            Some("西安"),
+            "西安 must not stay glued at slot 2: {after:?}"
+        );
+    }
+
+    #[test]
+    fn query_dier_lists_di_er() {
+        let eng = test_engine();
+        let words = query_words(&eng, "dier");
+        assert!(
+            words.contains(&"第二".into()),
+            "dier must list 第二: {words:?}"
+        );
+        assert_eq!(
+            words.first().map(String::as_str),
+            Some("第二"),
+            "dier should rank 第二 first: {words:?}"
+        );
+    }
+
+    #[test]
+    fn query_dierye_lists_second_page_and_di() {
+        let eng = test_engine();
+        let words = query_words(&eng, "dierye");
+        assert!(
+            words.contains(&"第二页".into()),
+            "dierye must list 第二页: {words:?}"
+        );
+        assert!(
+            words.contains(&"第二".into()),
+            "dierye must keep 第二 as prefix: {words:?}"
+        );
+        assert!(
+            words.contains(&"第".into()),
+            "dierye must list 第 so it can continue: {words:?}"
+        );
+        let pos_page = words.iter().position(|w| w == "第二页").unwrap();
+        let pos_er = words.iter().position(|w| w == "第二").unwrap();
+        let pos_di = words.iter().position(|w| w == "第").unwrap();
+        assert!(
+            pos_page < 10 && pos_er < 10 && pos_di < 10,
+            "第二页/第二/第 should be on page 1, got {pos_page}/{pos_er}/{pos_di}: {words:?}"
+        );
+        assert!(pos_page < pos_er && pos_er < pos_di, "{words:?}");
+        assert_ne!(
+            words.first().map(String::as_str),
+            Some("跌"),
+            "dierye must not stop at die: {words:?}"
+        );
+    }
+
+    #[test]
+    fn select_dier_from_dierye_keeps_ye() {
+        let mut eng = test_engine();
+        type_pinyin(&mut eng, "dierye");
+        let out = select_word(&mut eng, "第二");
+        assert_eq!(out.commit.as_deref(), Some("第二"));
+        assert_eq!(eng.composing(), "ye");
+        assert!(
+            cand_words(&eng).contains(&"页".into()),
+            "leftover ye should list 页: {:?}",
+            cand_words(&eng)
+        );
     }
 
     #[test]
@@ -1528,7 +2085,7 @@ mod tests {
             DictEntry {
                 word: "显示".into(),
                 syllables: vec!["xian".into(), "shi".into()],
-                frequency: 8_000,
+                frequency: 500_000,
             },
             DictEntry {
                 word: "西安市".into(),
@@ -1624,8 +2181,8 @@ mod tests {
         assert!(xian.contains(&"先".into()), "xian must include 先: {xian:?}");
         assert_ne!(xian.first().map(String::as_str), Some("西安"), "{xian:?}");
         assert!(
-            !xian.contains(&"西安".into()),
-            "xian must not match 西安: {xian:?}"
+            xian.contains(&"西安".into()),
+            "xian must list 西安: {xian:?}"
         );
         let xi_an = query_words(&eng, "xi'an");
         assert!(xi_an.contains(&"西安".into()), "xi'an: {xi_an:?}");
@@ -1634,19 +2191,20 @@ mod tests {
             DictEntry {
                 word: "掉".into(),
                 syllables: vec!["diao".into()],
-                frequency: 9_000,
+                frequency: 90_000,
             },
             DictEntry {
                 word: "低奥".into(),
                 syllables: vec!["di".into(), "ao".into()],
-                frequency: 90_000,
+                frequency: 8_000,
             },
         ]);
         let words = query_words(&diao, "diao");
         assert_eq!(words.first().map(String::as_str), Some("掉"), "{words:?}");
-        assert!(
-            !words.contains(&"低奥".into()),
-            "diao must not split to di+ao: {words:?}"
+        assert_ne!(
+            words.first().map(String::as_str),
+            Some("低奥"),
+            "diao must not rank di+ao first: {words:?}"
         );
     }
 
@@ -1694,9 +2252,10 @@ mod tests {
             .map(|c| c.word.clone())
             .collect::<Vec<_>>();
         assert_eq!(words.first().map(String::as_str), Some("掉"), "{words:?}");
-        assert!(
-            !words.contains(&"低奥".into()),
-            "diao must not split to di+ao: {words:?}"
+        assert_ne!(
+            words.first().map(String::as_str),
+            Some("低奥"),
+            "diao must not rank di+ao first: {words:?}"
         );
         let split = eng
             .query("di'ao")
@@ -1798,7 +2357,14 @@ mod tests {
         );
         let xian = query_words(&eng, "xian");
         assert!(xian.contains(&"先".into()), "xian: {xian:?}");
-        assert!(!xian.contains(&"西安".into()), "xian must not list 西安: {xian:?}");
+        assert!(xian.contains(&"西安".into()), "xian must list 西安: {xian:?}");
+        assert_ne!(xian.first().map(String::as_str), Some("西安"), "{xian:?}");
+        let ba = query_words(&eng, "ba");
+        assert_ne!(
+            ba.get(1).map(String::as_str),
+            Some("保安"),
+            "ba must not pin 保安 at slot 2: {ba:?}"
+        );
         let xi_an = query_words(&eng, "xi'an");
         assert!(xi_an.contains(&"西安".into()), "xi'an: {xi_an:?}");
         let diao = query_words(&eng, "diao");
@@ -1807,6 +2373,20 @@ mod tests {
             "diao must include 掉: {diao:?}"
         );
         assert_ne!(diao.first().map(String::as_str), Some("低奥"));
+        let dierye = query_words(&eng, "dierye");
+        assert!(
+            dierye.contains(&"第二页".into()),
+            "dierye must list 第二页: {dierye:?}"
+        );
+        assert!(
+            dierye.contains(&"第".into()),
+            "dierye must list 第: {dierye:?}"
+        );
+        assert!(
+            dierye.iter().position(|w| w == "第二页").unwrap()
+                < dierye.iter().position(|w| w == "第").unwrap(),
+            "{dierye:?}"
+        );
         assert_eq!(
             query_words(&eng, "slh").first().map(String::as_str),
             Some("\u{2026}"),

@@ -109,6 +109,32 @@ pub fn to_chinese(ch: char, quotes: &mut QuoteState) -> String {
     }
 }
 
+/// Half-width punctuation after English letters in Chinese mode.
+pub fn to_ascii(ch: char) -> String {
+    match ch {
+        '，' => ",".into(),
+        '。' => ".".into(),
+        '？' => "?".into(),
+        '！' => "!".into(),
+        '：' => ":".into(),
+        '；' => ";".into(),
+        '、' => "\\".into(),
+        '（' => "(".into(),
+        '）' => ")".into(),
+        '【' => "[".into(),
+        '】' => "]".into(),
+        '《' => "<".into(),
+        '》' => ">".into(),
+        '“' | '”' => "\"".into(),
+        '‘' | '’' => "'".into(),
+        '·' => "`".into(),
+        '￥' => "$".into(),
+        '～' => "~".into(),
+        '｜' => "|".into(),
+        other => other.to_string(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -121,6 +147,9 @@ mod tests {
         assert_eq!(to_chinese('?', &mut q), "？");
         assert_eq!(to_chinese('$', &mut q), "￥");
         assert_eq!(to_chinese('\\', &mut q), "、");
+        assert_eq!(to_ascii('.'), ".");
+        assert_eq!(to_ascii('。'), ".");
+        assert_eq!(to_ascii('?'), "?");
     }
 
     #[test]

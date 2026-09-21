@@ -659,7 +659,8 @@ fn map_char(ch: char, candidates_active: bool, ascii: bool) -> Option<KeyEvent> 
         ' ' => Some(KeyEvent::Space),
         d @ '0'..='9' => Some(KeyEvent::Digit(d as u8 - b'0')),
         ',' | '，' if candidates_active => Some(KeyEvent::PagePrev),
-        '.' | '。' if candidates_active => Some(KeyEvent::PageNext),
+        // `.` stays Punct so the engine can page *and* reinterpret as URL
+        // when the next key is a letter (`taobao.` + `c` → `taobao.c`).
         '-' | '－' if candidates_active => Some(KeyEvent::PagePrev),
         '+' | '＋' | '=' if candidates_active => Some(KeyEvent::PageNext),
         '\'' | '\u{2018}' | '\u{2019}' if !ascii => Some(KeyEvent::Separator),

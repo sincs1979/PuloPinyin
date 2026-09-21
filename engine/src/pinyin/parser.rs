@@ -131,13 +131,17 @@ pub fn preedit_marked(composing: &str) -> String {
     }
 }
 
-/// Taking `taken` from the start of `input` must not split an *atomic* syllable.
+/// Taking `taken` from the start of `input` must not split a longer syllable
+/// unless the leftover of this letter-chunk is a complete syllable run.
 ///
-/// A letter-chunk (until `'`) that is itself a valid syllable is atomic:
-/// `xian` / `diao` must be taken whole. Apostrophe always forces a boundary.
+/// `xian` is a valid syllable (greedy 先). Leftover after `xi` is `an`,
+/// also a syllable — that cut is allowed so 西安 can appear.
 ///
-/// In a longer run (`xianshi`), a longer valid syllable is also atomic: `xi`
-/// is rejected because the leftover of `xian` is itself a syllable (`an`).
+/// `dier` / `dierye`: greedy `die` strands `r`. `di` is allowed because
+/// leftover `er` / `er`+`ye` is a complete syllable run (第二 / 第二页).
+///
+/// A lone initial is not a cut: `b`+`a` must not match 保安 on `ba`.
+/// Apostrophe always forces a boundary.
 ///
 /// If the leftover of the longest syllable is *not* a syllable (`keneng`:
 /// `ke` leaves `n`), the shorter cut is also a valid full-syllable
@@ -152,10 +156,43 @@ pub fn respects_greedy_syllable(input: &str, taken: &str) -> bool {
         return true;
     }
     let chunk = chunk_letters(input);
-    if is_syllable(chunk) {
-        return taken.len() == chunk.len();
+    if taken.len() > chunk.len() || !chunk.starts_with(taken) {
+        return false;
     }
-    !splits_longer_syllable(chunk, taken)
+    let leftover = &chunk[taken.len()..];
+    if is_syllable(chunk) {
+        // `xi`+`an` is a real cut of `xian`. A lone initial is not:
+        // `b`+`a` must not match 保安 on `ba`.
+        return taken.len() == chunk.len()
+            || (is_syllable(taken) && is_full_syllable_run(leftover));
+    }
+    if !splits_longer_syllable(chunk, taken) {
+        return true;
+    }
+    is_syllable(taken) && is_full_syllable_run(leftover)
+}
+
+/// True when `s` is empty or a concatenation of complete syllables (`er`, `erye`).
+pub fn is_full_syllable_run(s: &str) -> bool {
+    let s = skip_separators(s);
+    if s.is_empty() {
+        return true;
+    }
+    let n = s.len();
+    let mut ok = vec![false; n + 1];
+    ok[0] = true;
+    for i in 0..n {
+        if !ok[i] {
+            continue;
+        }
+        for syl in syllables_at(&s[i..]) {
+            let j = i + syl.len();
+            if j <= n {
+                ok[j] = true;
+            }
+        }
+    }
+    ok[n]
 }
 
 /// `taken` is a proper prefix of the longest syllable, and the leftover of
@@ -364,11 +401,23 @@ mod tests {
 
     #[test]
     fn respects_greedy_xian_and_diao() {
-        assert!(!respects_greedy_syllable("xian", "xi"));
+        assert!(respects_greedy_syllable("xian", "xi"));
+        assert!(respects_greedy_syllable("xian", "xian"));
         assert!(respects_greedy_syllable("xi'an", "xi"));
-        assert!(!respects_greedy_syllable("diao", "di"));
+        assert!(respects_greedy_syllable("diao", "di"));
         assert!(respects_greedy_syllable("di'ao", "di"));
         assert!(respects_greedy_syllable("zhongguo", "zhong"));
+        assert!(respects_greedy_syllable("dier", "di"));
+        assert!(!respects_greedy_syllable("xian", "xia"));
+        assert!(!respects_greedy_syllable("ba", "b"));
+        assert!(respects_greedy_syllable("ba", "ba"));
+        assert!(!respects_greedy_syllable("xian", "x"));
+        assert!(respects_greedy_syllable("dierye", "di"));
+        assert!(respects_greedy_syllable("dierye", "die"));
+        assert!(is_full_syllable_run("er"));
+        assert!(is_full_syllable_run("erye"));
+        assert!(!is_full_syllable_run("rye"));
+        assert!(!is_full_syllable_run("nshi"));
     }
 
     #[test]
@@ -383,8 +432,8 @@ mod tests {
     }
 
     #[test]
-    fn respects_xianshi_does_not_split_xian() {
-        assert!(!respects_greedy_syllable("xianshi", "xi"));
+    fn respects_xianshi_allows_xi_when_leftover_is_syllable_run() {
+        assert!(respects_greedy_syllable("xianshi", "xi"));
         assert!(respects_greedy_syllable("xianshi", "xian"));
         assert!(respects_greedy_syllable("xi'anshi", "xi"));
         assert!(splits_longer_syllable("xianshi", "xi"));
@@ -394,6 +443,7 @@ mod tests {
         assert!(!shortens_longest_syllable("danshi", "dan"));
         assert!(respects_greedy_syllable("danshi", "da"));
         assert!(respects_greedy_syllable("danshi", "dan"));
+        assert!(is_full_syllable_run("anshi"));
     }
 
     #[test]
@@ -415,10 +465,10 @@ mod tests {
             parse_full_cuts("ke'neng"),
             vec![vec!["ke".to_string(), "neng".to_string()]]
         );
-        assert_eq!(
-            parse_full_cuts("xianshi"),
-            vec![vec!["xian".to_string(), "shi".to_string()]]
-        );
+        assert!(parse_full_cuts("xianshi").contains(&vec![
+            "xian".to_string(),
+            "shi".to_string()
+        ]));
         assert_eq!(
             parse_full_cuts("danshi"),
             vec![vec!["dan".to_string(), "shi".to_string()]]

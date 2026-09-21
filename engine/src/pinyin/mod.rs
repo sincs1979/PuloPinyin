@@ -18,8 +18,8 @@ use parser::{
 /// Initial matching is enabled only when the word has two or more syllables.
 /// Fuzzy forms expand the search range only — they do not affect ranking.
 /// An explicit `'` is a syllable boundary (`xi'an` → 西安, `ke'neng` → 可能).
-/// A longer valid syllable is not split (`xian` → 先, `xianshi` → 显示,
-/// not 西安 / 西安市). Initials must not steal leftover letters of a
+/// A leftover that is a complete syllable run is also a valid cut (`xian` →
+/// 先 and 西安; `dier` → 第二; `dierye` → 第二页). Initials must not steal leftover letters of a
 /// shortened syllable (`danshi` ↛ 大牛市). Alternative full-syllable cuts
 /// are all valid (`keneng` → ke+neng and ken+eng); ranking is by score.
 pub fn matches_word(input: &str, syllables: &[impl AsRef<str>]) -> bool {
@@ -57,8 +57,8 @@ pub fn matches_prefix(input: &str, syllables: &[impl AsRef<str>]) -> bool {
 }
 
 /// Greedy-longest full syllables of the consumed prefix match `syllables`
-/// (fuzzy-equivalent). Matching already rejects `xian`→`xi`+`an` and
-/// initial-skip (`danshi` ↛ 大牛市); this is kept for tests and diagnostics.
+/// (fuzzy-equivalent). Matching allows `xian`→`xi`+`an` as an alternate
+/// cut; this flag is true only for the greedy cover (先, not 西安).
 pub fn greedy_syllable_cover(
     input: &str,
     syllables: &[impl AsRef<str>],
@@ -288,21 +288,36 @@ mod tests {
     }
 
     #[test]
-    fn xian_does_not_match_xi_an() {
+    fn xian_matches_xi_an_as_alternate_cut() {
         assert!(matches_word("xian", &syls("xian")));
-        assert!(!matches_word("xian", &syls("xi an")));
-        assert!(!matches_prefix("xian", &syls("xi an")));
+        assert!(matches_word("xian", &syls("xi an")));
+        assert!(matches_prefix("xian", &syls("xi an")));
         assert!(matches_word("xi'an", &syls("xi an")));
         assert!(matches_word("xi an", &syls("xi an")));
         assert_eq!(match_consumed("xi'anwo", &syls("xi an")), Some(5));
+        assert_eq!(match_consumed("xian", &syls("xi an")), Some(4));
+        assert!(greedy_syllable_cover("xian", &syls("xian"), 4));
+        assert!(!greedy_syllable_cover("xian", &syls("xi an"), 4));
     }
 
     #[test]
-    fn diao_does_not_match_di_ao() {
+    fn diao_matches_di_ao_as_alternate_cut() {
         assert!(matches_word("diao", &syls("diao")));
-        assert!(!matches_word("diao", &syls("di ao")));
-        assert!(!matches_prefix("diao", &syls("di ao")));
+        assert!(matches_word("diao", &syls("di ao")));
         assert!(matches_word("di'ao", &syls("di ao")));
+        assert!(greedy_syllable_cover("diao", &syls("diao"), 4));
+        assert!(!greedy_syllable_cover("diao", &syls("di ao"), 4));
+    }
+
+    #[test]
+    fn dier_matches_di_er() {
+        assert!(matches_word("dier", &syls("di er")));
+        assert_eq!(match_consumed("dier", &syls("di er")), Some(4));
+        assert_eq!(match_consumed("dierye", &syls("di")), Some(2));
+        assert_eq!(match_consumed("dierye", &syls("di er")), Some(4));
+        assert!(matches_word("dierye", &syls("di er ye")));
+        assert!(!matches_word("ba", &syls("bao an")));
+        assert!(!matches_word("ba", &syls("b a")));
     }
 
     #[test]
@@ -311,14 +326,13 @@ mod tests {
         assert!(matches_word("ke'neng", &syls("ke neng")));
         assert!(matches_word("keneng", &syls("ken eng")));
         assert_eq!(match_consumed("keneng", &syls("ke neng")), Some(6));
-        assert!(!matches_word("xian", &syls("xi an")));
+        assert!(matches_word("xian", &syls("xi an")));
     }
 
     #[test]
-    fn xianshi_matches_xian_shi_not_xi_an_shi() {
+    fn xianshi_matches_xian_shi_and_xi_an_shi() {
         assert!(matches_word("xianshi", &syls("xian shi")));
-        assert!(!matches_word("xianshi", &syls("xi an shi")));
-        assert!(!matches_prefix("xianshi", &syls("xi an shi")));
+        assert!(matches_word("xianshi", &syls("xi an shi")));
         assert!(matches_word("xi'anshi", &syls("xi an shi")));
         assert!(matches_word("xi'an shi", &syls("xi an shi")));
         assert!(greedy_syllable_cover("xianshi", &syls("xian shi"), 7));
