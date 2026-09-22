@@ -185,8 +185,9 @@ impl Engine {
     ///
     /// - Uppercase `Char` (IME sends this only for a **held** Shift+letter)
     ///   commits that ASCII character and stays in Chinese.
-    /// - Lowercase is pinyin, unless an English token is already in progress:
-    ///   `ascii_buf` non-empty **and** no pinyin composing (`C` then `hatGPT`).
+    /// - Lowercase continues an English run when `ascii_buf` is non-empty,
+    ///   except after an ALL-CAPS token of 2+ letters (`RUT` then `ni` is
+    ///   pinyin). A lone capital (`C` then `hatGPT`) still continues English.
     /// - Space / Enter / punct / [`Self::end_ascii_run`] end the token.
     /// - A lone Shift+A does **not** set `ascii_mode`, and does not survive
     ///   activate. Unshifted `zhongguo` after a flushed run is pinyin.
@@ -197,7 +198,13 @@ impl Engine {
         if c.is_ascii_uppercase() {
             return true;
         }
-        self.composing.is_empty() && !self.ascii_buf.is_empty()
+        if self.composing.is_empty() && !self.ascii_buf.is_empty() {
+            let all_upper = self.ascii_buf.chars().all(|x| x.is_ascii_uppercase());
+            let n = self.ascii_buf.chars().count();
+            // `RUT` + `ni` → 你…; `C` + `hatGPT` stays English.
+            return !(all_upper && n >= 2);
+        }
+        false
     }
 
     pub fn handle_key(&mut self, key: KeyEvent) -> SessionOutput {
@@ -237,6 +244,14 @@ impl Engine {
                     return self.commit_url_after_dot_page(c);
                 }
                 self.dot_paged_for_url = false;
+                // End an ALL-CAPS Shift run (`RUT`) so the next keys are pinyin.
+                // Lone `C` is not flushed — `ChatGPT` continues as English.
+                if self.composing.is_empty()
+                    && self.ascii_buf.chars().count() >= 2
+                    && self.ascii_buf.chars().all(|x| x.is_ascii_uppercase())
+                {
+                    self.flush_ascii_learn();
+                }
                 self.composing.push(c.to_ascii_lowercase());
                 self.refresh_query();
                 self.output(None)
@@ -314,6 +329,21 @@ impl Engine {
             }
             KeyEvent::Digit(d) => {
                 if !candidates_active {
+                    // `user@163.com`: keep the English run across digits.
+                    if self.after_ascii_letter && self.composing.is_empty() {
+                        let ch = char::from(b'0' + d);
+                        self.ascii_buf.push(ch);
+                        self.after_ascii_digit = true;
+                        return SessionOutput {
+                            consumed: true,
+                            commit: Some(ch.to_string()),
+                            marked: String::new(),
+                            candidates: Vec::new(),
+                            page: 0,
+                            page_count: 0,
+                            ascii_mode: self.ascii_mode,
+                        };
+                    }
                     self.flush_ascii_learn();
                     self.after_ascii_letter = false;
                     self.dot_paged_for_url = false;
@@ -400,6 +430,11 @@ impl Engine {
             page_count: 0,
             ascii_mode: true,
         };
+        // One English word then Space/Enter/Esc → Chinese again (IME syncs on
+        // `ascii_mode: false`). Punct/digits stay English for emails/URLs.
+        let leave_english = |eng: &mut Self| {
+            eng.ascii_mode = false;
+        };
         match key {
             KeyEvent::Char(c) if c.is_ascii_alphabetic() => {
                 self.ascii_buf.push(c);
@@ -416,7 +451,16 @@ impl Engine {
             }
             KeyEvent::Space => {
                 self.flush_ascii_learn();
-                commit_char(' ')
+                leave_english(self);
+                SessionOutput {
+                    consumed: true,
+                    commit: Some(" ".into()),
+                    marked: String::new(),
+                    candidates: Vec::new(),
+                    page: 0,
+                    page_count: 0,
+                    ascii_mode: false,
+                }
             }
             KeyEvent::Digit(d) => {
                 self.flush_ascii_learn();
@@ -424,11 +468,13 @@ impl Engine {
             }
             KeyEvent::Enter => {
                 self.flush_ascii_learn();
-                SessionOutput::pass_through(true)
+                leave_english(self);
+                SessionOutput::pass_through(false)
             }
             KeyEvent::Escape => {
                 self.ascii_buf.clear();
-                SessionOutput::pass_through(true)
+                leave_english(self);
+                SessionOutput::pass_through(false)
             }
             KeyEvent::Backspace => {
                 self.ascii_buf.pop();
@@ -995,9 +1041,10 @@ fn looks_like_english(s: &str) -> bool {
     has_letter
 }
 
-/// Path / scheme punct while composing (`https:` / `a@b`); `.` stays for paging.
+/// Path / scheme / email punct while composing (`https:` / `a@b` / `a_b`).
+/// `.` stays for paging (reinterpreted as domain when a letter follows).
 fn is_url_path_punct(c: char) -> bool {
-    matches!(c, '/' | ':' | '@')
+    matches!(c, '/' | ':' | '@' | '_')
 }
 
 fn skip_leading_sep(s: &str) -> &str {
@@ -1332,6 +1379,59 @@ mod tests {
     }
 
     #[test]
+    fn email_at_commits_local_then_domain() {
+        let mut eng = test_engine();
+        type_pinyin(&mut eng, "zhangsan");
+        let out = eng.handle_key(KeyEvent::Punct('@'));
+        assert_eq!(out.commit.as_deref(), Some("zhangsan@"));
+        assert!(eng.composing().is_empty());
+        assert_eq!(
+            eng.handle_key(KeyEvent::Digit(1)).commit.as_deref(),
+            Some("1")
+        );
+        assert_eq!(
+            eng.handle_key(KeyEvent::Digit(6)).commit.as_deref(),
+            Some("6")
+        );
+        assert_eq!(
+            eng.handle_key(KeyEvent::Digit(3)).commit.as_deref(),
+            Some("3")
+        );
+        assert_eq!(
+            eng.handle_key(KeyEvent::Punct('.')).commit.as_deref(),
+            Some(".")
+        );
+        assert_eq!(
+            eng.handle_key(KeyEvent::Char('c')).commit.as_deref(),
+            Some("c")
+        );
+        assert_eq!(
+            eng.handle_key(KeyEvent::Char('o')).commit.as_deref(),
+            Some("o")
+        );
+        assert_eq!(
+            eng.handle_key(KeyEvent::Char('m')).commit.as_deref(),
+            Some("m")
+        );
+    }
+
+    #[test]
+    fn email_underscore_while_composing() {
+        let mut eng = test_engine();
+        type_pinyin(&mut eng, "user");
+        let out = eng.handle_key(KeyEvent::Punct('_'));
+        assert_eq!(out.commit.as_deref(), Some("user_"));
+        assert_eq!(
+            eng.handle_key(KeyEvent::Char('n')).commit.as_deref(),
+            Some("n")
+        );
+        assert_eq!(
+            eng.handle_key(KeyEvent::Punct('@')).commit.as_deref(),
+            Some("@")
+        );
+    }
+
+    #[test]
     fn enter_raw_letters_then_ascii_punct() {
         let mut eng = test_engine();
         type_pinyin(&mut eng, "ok");
@@ -1430,6 +1530,47 @@ mod tests {
         let out = eng.handle_key(KeyEvent::Char('z'));
         assert!(out.commit.is_none());
         assert_eq!(eng.composing(), "z");
+    }
+
+    #[test]
+    fn all_caps_shift_run_then_lowercase_is_pinyin() {
+        let mut eng = test_engine();
+        for c in "RUT".chars() {
+            let out = eng.handle_key(KeyEvent::Char(c));
+            assert_eq!(out.commit.as_deref(), Some(c.to_string().as_str()));
+            assert!(eng.composing().is_empty());
+            assert!(!eng.ascii_mode());
+        }
+        type_pinyin(&mut eng, "ni");
+        assert_eq!(eng.composing(), "ni");
+        assert!(
+            cand_words(&eng).iter().any(|w| w.contains('你') || w == "你"),
+            "RUT then ni must be pinyin, got {:?}",
+            cand_words(&eng)
+        );
+    }
+
+    #[test]
+    fn ascii_mode_space_returns_to_chinese() {
+        let mut eng = test_engine();
+        eng.set_ascii_mode(true);
+        for c in "RUT".chars() {
+            let out = eng.handle_key(KeyEvent::Char(c));
+            assert_eq!(out.commit.as_deref(), Some(c.to_string().as_str()));
+            assert!(out.ascii_mode);
+        }
+        let out = eng.handle_key(KeyEvent::Space);
+        assert_eq!(out.commit.as_deref(), Some(" "));
+        assert!(!out.ascii_mode, "Space must leave English mode");
+        assert!(!eng.ascii_mode());
+
+        type_pinyin(&mut eng, "hao");
+        assert_eq!(eng.composing(), "hao");
+        assert!(
+            cand_words(&eng).contains(&"好".into()),
+            "after RUT+Space, hao must be pinyin: {:?}",
+            cand_words(&eng)
+        );
     }
 
     #[test]

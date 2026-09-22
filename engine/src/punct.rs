@@ -52,6 +52,7 @@ pub fn is_punct_key(ch: char) -> bool {
             | '$'
             | '~'
             | '|'
+            | '@'
             | '+'
             | '-'
             | '='

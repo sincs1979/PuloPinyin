@@ -459,6 +459,13 @@ impl BuluoInputController {
 }
 
 fn apply_output(ctrl: &BuluoInputController, client: &AnyObject, out: &SessionOutput) {
+    // Engine left English (Space/Enter after a word like RUT) → Caps LED off.
+    if ASCII.load(Ordering::SeqCst) && !out.ascii_mode {
+        ctrl.set_ascii(false, false);
+        caps::set_led(false);
+        ctrl.swallow_caps_led();
+    }
+
     let replacement = NSRange {
         location: NSNotFound as usize,
         length: NSNotFound as usize,
